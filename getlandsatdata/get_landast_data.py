@@ -194,7 +194,8 @@ def check_order_cache(auth):
     
     return outDF
 
-def search(collection,lat,lon,start_date,end_date,cloud,available):
+def search(collection,lat,lon,start_date,end_date,cloud,available,landsat_SR):
+    path = os.path.abspath(os.path.join(landsat_SR,os.pardir))
     end = datetime.strptime(end_date, '%Y-%m-%d')
     # this is a landsat-util work around when it fails
     if collection==0:
@@ -205,7 +206,7 @@ def search(collection,lat,lon,start_date,end_date,cloud,available):
     # looking to see if metadata CSV is available and if its up to the date needed
     if os.path.exists(fn):
         d = datetime.fromtimestamp(os.path.getmtime(fn))
-        l8_db_name = fn[:-4]+'.db'
+        l8_db_name = os.path.join(path,fn[:-4]+'.db')
         conn = sqlite3.connect( l8_db_name )
         if ((end.year>d.year) and (end.month>d.month) and (end.day>d.day)):
             wget.download(metadataUrl)
@@ -218,7 +219,7 @@ def search(collection,lat,lon,start_date,end_date,cloud,available):
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     else:
         wget.download(metadataUrl)
-        l8_db_name = fn[:-4]+'.db'
+        l8_db_name = os.path.join(path,fn[:-4]+'.db')
         conn = sqlite3.connect( l8_db_name )
         metadata= pd.read_csv(fn)
         metadata['sr'] = pd.Series(np.tile('N',len(metadata)))
@@ -237,7 +238,8 @@ def search(collection,lat,lon,start_date,end_date,cloud,available):
     return output
 
 
-def createDB(dbRows,fns):
+def createDB(dbRows,fns,landsat_SR):
+    path = os.path.abspath(os.path.join(landsat_SR,os.pardir))
     end = datetime.strptime(str(dbRows.acquisitionDate.values[0]), '%Y-%m-%d')
     # this is a landsat-util work around when it fails
     collection=1
@@ -249,7 +251,7 @@ def createDB(dbRows,fns):
     # looking to see if metadata CSV is available and if its up to the date needed
     if os.path.exists(fn):
         d = datetime.fromtimestamp(os.path.getmtime(fn))
-        l8_db_name = fn[:-4]+'.db'        
+        l8_db_name = os.path.join(path,fn[:-4]+'.db')       
         if not os.path.exists(l8_db_name):
             orig_df= pd.read_csv(fn)
             orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
@@ -272,7 +274,7 @@ def createDB(dbRows,fns):
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     else:
         wget.download(metadataUrl)
-        l8_db_name = fn[:-4]+'.db'
+        l8_db_name = os.path.join(path,fn[:-4]+'.db')
         conn = sqlite3.connect( l8_db_name )
         orig_df= pd.read_csv(fn)
         orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
@@ -522,7 +524,7 @@ def main():
         
     #======search for landsat data not on system==============================
     available = 'N'
-    output_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available)
+    output_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available,landsat_SR)
     sceneIDs = output_df.sceneID
         
     #start Landsat order process
@@ -545,7 +547,7 @@ def main():
             shutil.copy(filename, folder) 
             fns.append(os.path.join(folder,filename))
 
-    createDB(output_df,fns)
+    createDB(output_df,fns,landsat_SR)
 
  
     if len(folders_2move)>0:

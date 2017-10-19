@@ -155,45 +155,7 @@ def check_order_cache(auth):
         response = getattr(requests, verb)(host + endpoint, auth=auth_tup, json=json)
         return response.json()
     
-    def espa_api(endpoint, verb='get', body=None, uauth=None):
-        """ Suggested simple way to interact with the ESPA JSON REST API """
-        auth_tup = uauth if uauth else (username, password)
-        response = getattr(requests, verb)(host + endpoint, auth=auth_tup, json=body)
-        print('{} {}'.format(response.status_code, response.reason))
-        data = response.json()
-        if isinstance(data, dict):
-            messages = data.pop("messages", None)  
-            if messages:
-                print(json.dumps(messages, indent=4))
-        try:
-            response.raise_for_status()
-        except Exception as e:
-            print(e)
-            return None
-        else:
-            return data
-
-    filters = {"status": ["complete", "ordered"]}  # Here, we ignore any purged orders
-    order_list = espa_api('list-orders', body=filters)
-    orderID =[]
-    fName = []
-    order_status=[]
-    for i in range(len(order_list)):
-        orderid = order_list[i]
-        resp = espa_api('item-status/{0}'.format(orderid))
-        ddd = json.loads(json.dumps(resp))
-        for j in range(len(ddd['%s' % orderid])):
-            fname = ddd['%s' % orderid][j]['name']
-            status = ddd['%s' % orderid][j]['status']
-            orderID.append(orderid)
-            fName.append(fname)
-            order_status.append(status)
-                
-    output = {'orderid':orderID,'productID':fName,'status':order_status}
-    outDF = pd.DataFrame(output)  
     
-    return outDF
-
 def search(collection,lat,lon,start_date,end_date,cloud,available,landsat_SR):
     path = os.path.abspath(os.path.join(landsat_SR,os.pardir))
     end = datetime.strptime(end_date, '%Y-%m-%d')

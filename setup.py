@@ -15,7 +15,7 @@ except ImportError:
     from distutils.core import setup
     setup_kwargs = {'scripts': ['bin/getlandsatdata']}
     
-from getmodisdata import __version__
+from getlandsatdata import __version__
 
 
 

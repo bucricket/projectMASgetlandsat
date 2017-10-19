@@ -494,7 +494,7 @@ def main():
     parser.add_argument("start_date", type=str, help="Start date yyyy-mm-dd")
     parser.add_argument("end_date", type=str, help="Start date yyyy-mm-dd")
     parser.add_argument("cloud", type=int, help="cloud coverage")
-    parser.add_argument("output_dir", type=int, help="Directory where to put landsat data")
+    parser.add_argument("output_dir", type=str, help="Directory where to put landsat data")
     args = parser.parse_args()
       
     loc = [args.lat,args.lon] 

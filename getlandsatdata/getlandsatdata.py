@@ -11,6 +11,7 @@ import glob
 import shutil
 import pandas as pd
 from datetime import datetime
+from datetime import date as dt
 import wget
 import argparse
 import getpass
@@ -266,8 +267,52 @@ def search(collection,lat,lon,start_date,end_date,cloud,available,landsat_SR):
     conn.close()
     return output
 
+def createDB(landsat_SR):
+    path = os.path.abspath(os.path.join(landsat_SR,os.pardir))
+    end = datetime.today()
+    # this is a landsat-util work around when it fails
+    collection=1
+    if collection==0:
+        metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8.csv'
+    else:
+        metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8_C1.csv'
+    fn  = metadataUrl.split(os.sep)[-1]
+    # looking to see if metadata CSV is available and if its up to the date needed
+    if os.path.exists(fn):
+        d = datetime.fromtimestamp(os.path.getmtime(fn))
+        l8_db_name = os.path.join(path,fn[:-4]+'.db')       
+        if not os.path.exists(l8_db_name):
+            orig_df= pd.read_csv(fn)
+            orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
+            orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
+            orig_df['local_file'] = ''
+            conn = sqlite3.connect( l8_db_name )
+            orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
+        else:
+            conn = sqlite3.connect( l8_db_name )
+            orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
+        
+        if ((end.year>d.year) and (end.month>d.month) and (end.day>d.day)):
+            wget.download(metadataUrl)
+            metadata= pd.read_csv(fn)
+            metadata['sr'] = pd.Series(np.tile('N',len(metadata)))
+            metadata['bt'] = pd.Series(np.tile('N',len(metadata)))
+            orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
+            orig_df = orig_df.append(metadata,ignore_index=True)
+            orig_df = orig_df.drop_duplicates(subset='sceneID',keep='first')
+            orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
+    else:
+        wget.download(metadataUrl)
+        l8_db_name = os.path.join(path,fn[:-4]+'.db')
+        conn = sqlite3.connect( l8_db_name )
+        orig_df= pd.read_csv(fn)
+        orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
+        orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
+        orig_df['local_file'] = ''
+        orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
 
-def createDB(dbRows,fns,landsat_SR):
+
+def updateDB(dbRows,fns,landsat_SR):
     path = os.path.abspath(os.path.join(landsat_SR,os.pardir))
     end = datetime.strptime(str(dbRows.acquisitionDate.values[0]), '%Y-%m-%d')
     # this is a landsat-util work around when it fails
@@ -521,15 +566,7 @@ def main():
         keyring.set_password("usgs",usgs_user,usgs_pass)
     else:
         usgs_pass = str(keyring.get_password("usgs",usgs_user)) 
-    
-    
-     # =====earthData credentials===============
-    earth_user = str(getpass.getpass(prompt="earth login username:"))
-    if keyring.get_password("nasa",earth_user)==None:
-        earth_pass = str(getpass.getpass(prompt="earth login password:"))
-        keyring.set_password("nasa",earth_user,earth_pass)
-    else:
-        earth_pass = str(keyring.get_password("nasa",earth_user)) 
+
         
     #======search for landsat data not on system===============================
     if orderOrsearch == 'search':
@@ -569,7 +606,7 @@ def main():
                 shutil.copy(filename, folder) 
                 fns.append(os.path.join(folder,filename))
     
-        createDB(output_df,fns,landsat_SR)
+        updateDB(output_df,fns,landsat_SR)
     
      
         if len(folders_2move)>0:

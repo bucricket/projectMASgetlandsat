@@ -533,9 +533,10 @@ def main():
     available = 'N'
     output_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available,landsat_SR)
     sceneIDs = output_df.sceneID
+    productIDs = output_df.LANDSAT_PRODUCT_ID
         
     #start Landsat order process
-    get_landsat_data(sceneIDs,("%s"% usgs_user,"%s"% usgs_pass))
+    get_landsat_data(productIDs,("%s"% usgs_user,"%s"% usgs_pass))
     
     #========move surface relectance files=====================================
     download_folder = os.path.join(os.getcwd(),'espa_downloads')

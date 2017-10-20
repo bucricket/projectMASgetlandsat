@@ -546,37 +546,37 @@ def main():
         available = 'N'
         output_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available,landsat_SR)
         
-    sceneIDs = output_df.sceneID
-    productIDs = output_df.LANDSAT_PRODUCT_ID
-        
-    #start Landsat order process
-    get_landsat_data(productIDs,("%s"% usgs_user,"%s"% usgs_pass))
-    
-    #========move surface relectance files=====================================
-    download_folder = os.path.join(os.getcwd(),'espa_downloads')
-    folders_2move = glob.glob(os.path.join(download_folder ,'*'))
-    i=0
-    fns = []
-    for sceneID in sceneIDs:        
-        inputFolder = folders_2move[i]
-        i+=1
-        scene = sceneID[3:9]
-        folder = os.path.join(landsat_SR,scene)
-        if not os.path.exists(folder):
-            os.mkdir(folder)
+        sceneIDs = output_df.sceneID
+        productIDs = output_df.LANDSAT_PRODUCT_ID
             
-        for filename in glob.glob(os.path.join(inputFolder, '*.*')):
-            shutil.copy(filename, folder) 
-            fns.append(os.path.join(folder,filename))
-
-    createDB(output_df,fns,landsat_SR)
-
- 
-    if len(folders_2move)>0:
-            #======Clean up folder===============================
-            shutil.rmtree(download_folder)
-
-    print("All done downloading data!!")
+        #start Landsat order process
+        get_landsat_data(productIDs,("%s"% usgs_user,"%s"% usgs_pass))
+        
+        #========move surface relectance files=====================================
+        download_folder = os.path.join(os.getcwd(),'espa_downloads')
+        folders_2move = glob.glob(os.path.join(download_folder ,'*'))
+        i=0
+        fns = []
+        for sceneID in sceneIDs:        
+            inputFolder = folders_2move[i]
+            i+=1
+            scene = sceneID[3:9]
+            folder = os.path.join(landsat_SR,scene)
+            if not os.path.exists(folder):
+                os.mkdir(folder)
+                
+            for filename in glob.glob(os.path.join(inputFolder, '*.*')):
+                shutil.copy(filename, folder) 
+                fns.append(os.path.join(folder,filename))
+    
+        createDB(output_df,fns,landsat_SR)
+    
+     
+        if len(folders_2move)>0:
+                #======Clean up folder===============================
+                shutil.rmtree(download_folder)
+    
+        print("All done downloading data!!")
 
 
 if __name__ == "__main__":

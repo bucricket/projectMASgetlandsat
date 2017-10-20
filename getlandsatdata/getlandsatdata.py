@@ -502,6 +502,7 @@ def main():
     parser.add_argument("end_date", type=str, help="Start date yyyy-mm-dd")
     parser.add_argument("cloud", type=int, help="cloud coverage")
     parser.add_argument("output_dir", type=str, help="Directory where to put landsat data")
+    parser.add_argument("orderOrsearch", type=str, help="type 'order' for order and 'search' for print search results")
     args = parser.parse_args()
       
     loc = [args.lat,args.lon] 
@@ -509,6 +510,7 @@ def main():
     end_date = args.end_date
     cloud = args.cloud
     landsat_SR = args.output_dir
+    orderOrsearch = args.orderOrsearch
     collection = 1
     
     # =====USGS credentials===============
@@ -529,9 +531,21 @@ def main():
     else:
         earth_pass = str(keyring.get_password("nasa",earth_user)) 
         
-    #======search for landsat data not on system==============================
-    available = 'N'
-    output_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available,landsat_SR)
+    #======search for landsat data not on system===============================
+    if orderOrsearch == 'search':
+        available = 'N'
+        notDownloaded_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available,landsat_SR)
+        available = 'Y'
+        Downloaded_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available,landsat_SR)
+        print("====data needed to be downloaded==============================")
+        print(notDownloaded_df.LANDSAT_PRODUCT_ID.values)
+        print("====data available on system==================================")
+        print(Downloaded_df.LANDSAT_PRODUCT_ID.values)
+        
+    else:
+        available = 'N'
+        output_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available,landsat_SR)
+        
     sceneIDs = output_df.sceneID
     productIDs = output_df.LANDSAT_PRODUCT_ID
         

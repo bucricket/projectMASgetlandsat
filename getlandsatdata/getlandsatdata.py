@@ -237,7 +237,17 @@ def search(collection,lat,lon,start_date,end_date,cloud,available,landsat_SR):
     if os.path.exists(fn):
         d = datetime.fromtimestamp(os.path.getmtime(fn))
         l8_db_name = os.path.join(path,fn.split(os.sep)[-1][:-4]+'.db') 
-        conn = sqlite3.connect( l8_db_name )
+        if not os.path.exists(l8_db_name):
+            orig_df= pd.read_csv(fn)
+            orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
+            orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
+            orig_df['local_file'] = ''
+            conn = sqlite3.connect( l8_db_name )
+            orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
+        else:
+            conn = sqlite3.connect( l8_db_name )
+            orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
+            
         if ((end.year>d.year) and (end.month>d.month) and (end.day>d.day)):
             wget.download(metadataUrl)
             metadata= pd.read_csv(fn)

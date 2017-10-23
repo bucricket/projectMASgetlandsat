@@ -366,7 +366,8 @@ def updateDB(dbRows,paths,landsat_SR):
     # looking to see if metadata CSV is available and if its up to the date needed
     if os.path.exists(fn):
         d = datetime.fromtimestamp(os.path.getmtime(fn))
-        l8_db_name = os.path.join(path,fn.split(os.sep)[-1][:-4]+'.db')       
+        l8_db_name = os.path.join(path,fn.split(os.sep)[-1][:-4]+'.db') 
+        print(l8_db_name)
         if not os.path.exists(l8_db_name):
             orig_df= pd.read_csv(fn)
             orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))

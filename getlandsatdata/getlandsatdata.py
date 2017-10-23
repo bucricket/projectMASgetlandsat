@@ -590,6 +590,7 @@ def main():
     parser.add_argument("output_dir", type=str, help="Directory where to put landsat data")
     parser.add_argument("orderOrsearch", type=str, help="type 'order' for order and 'search'"
                         "for print search results or 'update' to update the database with existing data")
+    parser.add_argument('-c','--cache', nargs='*',type=str, default=None, help='top directory for the landsat cache')
     args = parser.parse_args()
       
     loc = [args.lat,args.lon] 
@@ -598,6 +599,7 @@ def main():
     cloud = args.cloud
     landsat_SR = args.output_dir
     orderOrsearch = args.orderOrsearch
+    cacheDir = args.cache
     collection = 1
     
     # =====USGS credentials===============
@@ -622,6 +624,8 @@ def main():
         print(Downloaded_df.LANDSAT_PRODUCT_ID.values)
         
     elif orderOrsearch == 'update':
+        
+        #====find all landsat files on system==================================
         fns = []
         paths = []
         for root, dirs, files in os.walk(landsat_SR):
@@ -630,12 +634,28 @@ def main():
                      fns.append(os.path.join(root, file))
                      paths.append(root)
         i = 0
+        productIDs = []
         for fn in fns:             
             path = paths[i]
             i+=1
-            productID = '_'.join(fn.split(os.sep)[-1].split('_')[:7])
+            productIDs.append('_'.join(fn.split(os.sep)[-1].split('_')[:7]))
+        productIDs = np.unique(productIDs)
+        paths = np.unique(paths)
+        #=========copy all landsat files to the cache and put cache location in the database
+        for productID in productIDs:
+            scene = productID.split(os.sep)[-1].split('_')[2]
+            folder = os.path.join(cacheDir,scene)
+            if not os.path.exists(folder):
+                os.mkdir(folder)
             productIDdf = searchProduct(productID,landsat_SR)
-            updateDB(productIDdf,path,landsat_SR)
+            updateDB(productIDdf,folder,landsat_SR)
+            
+            for path in paths:
+                fns = glob.glob(os.path.join(path,"*%s*" % productID))
+                if len(fns)>0:
+                    for filename in fns:
+                        shutil.copy(filename, folder) 
+                    continue
                      
     else:
         available = 'N'

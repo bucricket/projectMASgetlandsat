@@ -279,6 +279,16 @@ def search(collection,lat,lon,start_date,end_date,cloud,available,landsat_SR):
 
 def searchProduct(productID,db_path):
     l8_db_name = os.path.join(db_path,'LANDSAT_8_C1.db') 
+    metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8_C1.csv'
+    fn  = os.path.join(db_path,metadataUrl.split(os.sep)[-1])
+    if not os.path.exists(l8_db_name):
+        wget.download(metadataUrl)
+        conn = sqlite3.connect( l8_db_name )
+        orig_df= pd.read_csv(fn)
+        orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
+        orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
+        orig_df['local_file'] = ''
+        orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     conn = sqlite3.connect( l8_db_name )    
     output = pd.read_sql_query("SELECT * from raw_data WHERE (LANDSAT_PRODUCT_ID == '%s')" %  productID,conn)
     conn.close()

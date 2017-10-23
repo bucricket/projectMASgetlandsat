@@ -644,6 +644,8 @@ def main():
         #=========copy all landsat files to the cache and put cache location in the database
         for productID in productIDs:
             scene = productID.split(os.sep)[-1].split('_')[2]
+            print(scene)
+            print(cacheDir)
             folder = os.path.join(cacheDir,scene)
             if not os.path.exists(folder):
                 os.mkdir(folder)

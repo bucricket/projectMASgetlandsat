@@ -280,7 +280,7 @@ def createDB(dbRows,paths,landsat_SR):
     # looking to see if metadata CSV is available and if its up to the date needed
     if os.path.exists(fn):
         d = datetime.fromtimestamp(os.path.getmtime(fn))
-        l8_db_name = os.path.join(path,fn[:-4]+'.db')       
+        l8_db_name = os.path.join(path,fn.split(os.sep)[-1][:-4]+'.db')        
         if not os.path.exists(l8_db_name):
             orig_df= pd.read_csv(fn)
             orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
@@ -303,7 +303,7 @@ def createDB(dbRows,paths,landsat_SR):
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     else:
         wget.download(metadataUrl)
-        l8_db_name = os.path.join(path,fn[:-4]+'.db')
+        l8_db_name = os.path.join(path,fn.split(os.sep)[-1][:-4]+'.db') 
         conn = sqlite3.connect( l8_db_name )
         orig_df= pd.read_csv(fn)
         orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
@@ -337,7 +337,7 @@ def updateDB(dbRows,paths,landsat_SR):
     # looking to see if metadata CSV is available and if its up to the date needed
     if os.path.exists(fn):
         d = datetime.fromtimestamp(os.path.getmtime(fn))
-        l8_db_name = os.path.join(path,fn[:-4]+'.db')       
+        l8_db_name = os.path.join(path,fn.split(os.sep)[-1][:-4]+'.db')       
         if not os.path.exists(l8_db_name):
             orig_df= pd.read_csv(fn)
             orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
@@ -360,7 +360,7 @@ def updateDB(dbRows,paths,landsat_SR):
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     else:
         wget.download(metadataUrl)
-        l8_db_name = os.path.join(path,fn[:-4]+'.db')
+        l8_db_name = os.path.join(path,fn.split(os.sep)[-1][:-4]+'.db') 
         conn = sqlite3.connect( l8_db_name )
         orig_df= pd.read_csv(fn)
         orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))

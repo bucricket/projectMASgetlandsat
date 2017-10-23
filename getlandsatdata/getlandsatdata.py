@@ -283,6 +283,7 @@ def searchProduct(productID,db_path):
     fn  = os.path.join(db_path,metadataUrl.split(os.sep)[-1])
     if not os.path.exists(l8_db_name):
         wget.download(metadataUrl)
+        shutil.move(metadataUrl.split(os.sep)[-1],fn)
         conn = sqlite3.connect( l8_db_name )
         orig_df= pd.read_csv(fn)
         orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))

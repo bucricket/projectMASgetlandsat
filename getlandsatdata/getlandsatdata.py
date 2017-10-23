@@ -267,7 +267,7 @@ def search(collection,lat,lon,start_date,end_date,cloud,available,landsat_SR):
     conn.close()
     return output
 
-def createDB(landsat_SR):
+def createDB(dbRows,paths,landsat_SR):
     path = os.path.abspath(os.path.join(landsat_SR,os.pardir))
     end = datetime.today()
     # this is a landsat-util work around when it fails
@@ -310,9 +310,21 @@ def createDB(landsat_SR):
         orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
         orig_df['local_file'] = ''
         orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
+    #========updating database to reflect what is available on local system====
+#    orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
+    for i in range(len(paths)):
+        dbRows.loc[i,'local_file_path'] = paths[i]
+        dbRows.loc[i,'sr']='Y'
+        dbRows.loc[i,'bt']='Y'
+        
+    
+    orig_df = orig_df.append(dbRows,ignore_index=True)
+    orig_df = orig_df.drop_duplicates(subset='sceneID',keep='last')
+    orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
+    conn.close()
 
 
-def updateDB(dbRows,fns,landsat_SR):
+def updateDB(dbRows,paths,landsat_SR):
     path = os.path.abspath(os.path.join(landsat_SR,os.pardir))
     end = datetime.strptime(str(dbRows.acquisitionDate.values[0]), '%Y-%m-%d')
     # this is a landsat-util work around when it fails
@@ -357,8 +369,8 @@ def updateDB(dbRows,fns,landsat_SR):
         orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     #========updating database to reflect what is available on local system====
 #    orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
-    for i in range(len(fns)):
-        dbRows.loc[i,'local_file'] = fns[i]
+    for i in range(len(paths)):
+        dbRows.loc[i,'local_file_path'] = paths[i]
         dbRows.loc[i,'sr']='Y'
         dbRows.loc[i,'bt']='Y'
         
@@ -593,7 +605,7 @@ def main():
         download_folder = os.path.join(os.getcwd(),'espa_downloads')
         folders_2move = glob.glob(os.path.join(download_folder ,'*'))
         i=0
-        fns = []
+        paths = []
         for sceneID in sceneIDs:        
             inputFolder = folders_2move[i]
             i+=1
@@ -604,9 +616,9 @@ def main():
                 
             for filename in glob.glob(os.path.join(inputFolder, '*.*')):
                 shutil.copy(filename, folder) 
-                fns.append(os.path.join(folder,filename))
+            paths.append(folder)
     
-        updateDB(output_df,fns,landsat_SR)
+        updateDB(output_df,paths,landsat_SR)
     
      
         if len(folders_2move)>0:

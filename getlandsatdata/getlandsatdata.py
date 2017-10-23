@@ -600,6 +600,7 @@ def main():
     landsat_SR = args.output_dir
     orderOrsearch = args.orderOrsearch
     cacheDir = args.cache
+    cacheDir = cacheDir[0]
     collection = 1
     
     # =====USGS credentials===============

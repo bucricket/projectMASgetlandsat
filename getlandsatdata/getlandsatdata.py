@@ -277,6 +277,13 @@ def search(collection,lat,lon,start_date,end_date,cloud,available,landsat_SR):
     conn.close()
     return output
 
+def searchProduct(productID,db_path):
+    l8_db_name = os.path.join(db_path,'LANDSAT_8_C1.db') 
+    conn = sqlite3.connect( l8_db_name )    
+    output = pd.read_sql_query("SELECT * from raw_data WHERE (LANDSAT_PRODUCT_ID == '%s')" %  productID,conn)
+    conn.close()
+    return output
+
 def createDB(dbRows,paths,landsat_SR):
     path = os.path.abspath(os.path.join(landsat_SR,os.pardir))
     end = datetime.today()
@@ -569,7 +576,8 @@ def main():
     parser.add_argument("end_date", type=str, help="Start date yyyy-mm-dd")
     parser.add_argument("cloud", type=int, help="cloud coverage")
     parser.add_argument("output_dir", type=str, help="Directory where to put landsat data")
-    parser.add_argument("orderOrsearch", type=str, help="type 'order' for order and 'search' for print search results")
+    parser.add_argument("orderOrsearch", type=str, help="type 'order' for order and 'search'"
+                        "for print search results or 'update' to update the database with existing data")
     args = parser.parse_args()
       
     loc = [args.lat,args.lon] 
@@ -601,6 +609,22 @@ def main():
         print("====data available on system==================================")
         print(Downloaded_df.LANDSAT_PRODUCT_ID.values)
         
+    elif orderOrsearch == 'update':
+        fns = []
+        paths = []
+        for root, dirs, files in os.walk(landsat_SR):
+            for file in files:
+                if (file.startswith("LC08")) and (file.endswith(".tif")):
+                     fns.append(os.path.join(root, file))
+                     paths.append(root)
+        i = 0
+        for fn in fns:             
+            path = paths[i]
+            i+=1
+            productID = '_'.join(fn.split(os.sep)[-1].split('_')[:7])
+            productIDdf = searchProduct(productID,landsat_SR)
+            updateDB(productIDdf,path,landsat_SR)
+                     
     else:
         available = 'N'
         output_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available,landsat_SR)

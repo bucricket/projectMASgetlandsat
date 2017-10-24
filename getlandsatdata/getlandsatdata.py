@@ -224,7 +224,7 @@ def check_order_cache(auth):
     return outDF
     
     
-def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat):
+def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat,sensor):
     end = datetime.strptime(end_date, '%Y-%m-%d')
     # this is a landsat-util work around when it fails
     if sat==7:
@@ -272,8 +272,9 @@ def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat):
                                "AND (upperLeftCornerLongitude < %f ) AND "
                                "(lowerRightCornerLatitude < %f) AND "
                                "(lowerRightCornerLongitude > %f) AND "
-                               "(cloudCoverFull <= %d) AND (sr = '%s')" % 
-                               (start_date,end_date,lat,lon,lat,lon,cloud,available),conn)
+                               "(cloudCoverFull <= %d) AND (sr = '%s') AND
+                               "(sensor = %s" % 
+                               (start_date,end_date,lat,lon,lat,lon,cloud,available,sensor),conn)
     conn.close()
     return output
 
@@ -620,7 +621,9 @@ def main():
                      
     else:
         available = 'N'
-        output_df = search(loc[0],loc[1],start_date,end_date,cloud,available,cacheDir,sat)
+        if sat == 8:
+            sensor = 'OLI_TIRS'
+        output_df = search(loc[0],loc[1],start_date,end_date,cloud,available,cacheDir,sat,sensor)
         
         sceneIDs = output_df.sceneID
         productIDs = output_df.LANDSAT_PRODUCT_ID

@@ -249,7 +249,7 @@ def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat):
 #            orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
             
         if ((end.year>d.year) and (end.month>d.month) and (end.day>d.day)):
-            wget.download(metadataUrl)
+            wget.download(metadataUrl,out=fn)
             metadata= pd.read_csv(fn)
             metadata['sr'] = pd.Series(np.tile('N',len(metadata)))
             metadata['bt'] = pd.Series(np.tile('N',len(metadata)))
@@ -258,7 +258,7 @@ def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat):
             orig_df = orig_df.drop_duplicates(subset='sceneID',keep='first')
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     else:
-        wget.download(metadataUrl)
+        wget.download(metadataUrl,out=fn)
         db_name = os.path.join(cacheDir,fn.split(os.sep)[-1][:-4]+'.db') 
         conn = sqlite3.connect( db_name )
         metadata= pd.read_csv(fn)
@@ -287,7 +287,7 @@ def searchProduct(productID,db_path,sat):
 
     fn  = os.path.join(db_path,metadataUrl.split(os.sep)[-1])
     if not os.path.exists(db_name):
-        wget.download(metadataUrl)
+        wget.download(metadataUrl,out=fn)
         shutil.move(metadataUrl.split(os.sep)[-1],fn)
         conn = sqlite3.connect( db_name )
         orig_df= pd.read_csv(fn)
@@ -327,7 +327,7 @@ def updateDB(dbRows,paths,cacheDir,sat):
             orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
         
         if ((end.year>d.year) and (end.month>d.month) and (end.day>d.day)):
-            wget.download(metadataUrl)
+            wget.download(metadataUrl,out=fn)
             metadata= pd.read_csv(fn)
             metadata['sr'] = pd.Series(np.tile('N',len(metadata)))
             metadata['bt'] = pd.Series(np.tile('N',len(metadata)))
@@ -336,7 +336,7 @@ def updateDB(dbRows,paths,cacheDir,sat):
             orig_df = orig_df.drop_duplicates(subset='sceneID',keep='first')
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     else:
-        wget.download(metadataUrl)
+        wget.download(metadataUrl,out=fn)
         db_name = os.path.join(cacheDir,fn.split(os.sep)[-1][:-4]+'.db') 
         conn = sqlite3.connect( db_name )
         orig_df= pd.read_csv(fn)

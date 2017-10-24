@@ -595,7 +595,6 @@ def main():
     start_date = args.start_date
     end_date = args.end_date
     cloud = args.cloud
-    landsat_SR = args.output_dir
     orderOrsearch = args.orderOrsearch
     cacheDir = args.cache
     cacheDir = cacheDir[0]

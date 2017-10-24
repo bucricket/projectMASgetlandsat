@@ -659,6 +659,9 @@ def main():
         for productID in productIDs:
             for path in paths:                
                 fns = glob.glob(os.path.join(path,"*%s*" % productID))
+                scene = productID.split(os.sep)[-1].split('_')[2]
+                satellite = productID[3]
+                folder = os.path.join(cacheDir,"L%s" % satellite,scene)
                 if len(fns)>0:
                     for filename in fns:
                         fn = filename.split(os.sep)[-1]

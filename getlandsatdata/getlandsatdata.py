@@ -538,7 +538,7 @@ def main():
     parser.add_argument("orderOrsearch", type=str, help="type 'order' for order and 'search'"
                         "for print search results or 'update' to update the database with existing data")
     parser.add_argument("cache",type=str, default=None, help='top directory for the landsat cache')
-    parser.add_argument('-s','--sat', nargs='*',type=int, default=8, help='which landsat to search or download, i.e. Landsat 8 = 8')    
+    parser.add_argument('-s','--sat', nargs='?',type=int, default=8, help='which landsat to search or download, i.e. Landsat 8 = 8')    
     parser.add_argument('-f','--find', nargs='*',type=str, default=None, help='top directory to search for local files to be added to the main cache')
     args = parser.parse_args()
       
@@ -597,8 +597,7 @@ def main():
         for productID in productIDs:
             print(productID)
             scene = productID.split(os.sep)[-1].split('_')[2]
-            satellite = productID[3]
-            folder = os.path.join(cacheDir,"L%s" % satellite,scene)
+            folder = os.path.join(cacheDir,"L%d" % sat,scene)
             if not os.path.exists(folder):
                 os.mkdir(folder)
             folders.append(folder)
@@ -609,8 +608,7 @@ def main():
             for path in paths:                
                 fns = glob.glob(os.path.join(path,"*%s*" % productID))
                 scene = productID.split(os.sep)[-1].split('_')[2]
-                satellite = productID[3]
-                folder = os.path.join(cacheDir,"L%s" % satellite,scene)
+                folder = os.path.join(cacheDir,"L%d" % sat,scene)
                 if len(fns)>0:
                     for filename in fns:
                         fn = filename.split(os.sep)[-1]
@@ -639,8 +637,7 @@ def main():
             inputFolder = folders_2move[i]
             i+=1
             scene = sceneID[3:9]
-            satellite = sceneID[2]
-            folder = os.path.join(cacheDir,"L%s" % satellite,scene)
+            folder = os.path.join(cacheDir,"L%d" % sat,scene)
             if not os.path.exists(folder):
                 os.mkdir(folder)
                 

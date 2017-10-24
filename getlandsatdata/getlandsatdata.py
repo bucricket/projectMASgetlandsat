@@ -364,7 +364,6 @@ def updateDB(dbRows,paths,cacheDir):
     if os.path.exists(fn):
         d = datetime.fromtimestamp(os.path.getmtime(fn))
         l8_db_name = os.path.join(cacheDir,fn.split(os.sep)[-1][:-4]+'.db') 
-        print(l8_db_name)
         if not os.path.exists(l8_db_name):
             orig_df= pd.read_csv(fn)
             orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
@@ -644,8 +643,6 @@ def main():
         #=========copy all landsat files to the cache and put cache location in the database
         for productID in productIDs:
             scene = productID.split(os.sep)[-1].split('_')[2]
-            print(scene)
-            print(cacheDir)
             satellite = productID[3]
             folder = os.path.join(cacheDir,"L%s" % satellite,scene)
             if not os.path.exists(folder):
@@ -654,10 +651,12 @@ def main():
             updateDB(productIDdf,folder,cacheDir)
             
             for path in paths:
+                print(path)
                 fns = glob.glob(os.path.join(path,"*%s*" % productID))
                 if len(fns)>0:
                     for filename in fns:
                         if not os.path.exists(filename):
+                            print(productID)
                             shutil.copy(filename, folder) 
                     continue
                      

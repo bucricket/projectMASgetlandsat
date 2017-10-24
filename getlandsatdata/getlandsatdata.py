@@ -224,19 +224,18 @@ def check_order_cache(auth):
     return outDF
     
     
-def search(collection,lat,lon,start_date,end_date,cloud,available,landsat_SR):
-    path = os.path.abspath(os.path.join(landsat_SR,os.pardir))
+def search(collection,lat,lon,start_date,end_date,cloud,available,cacheDir):
     end = datetime.strptime(end_date, '%Y-%m-%d')
     # this is a landsat-util work around when it fails
     if collection==0:
         metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8.csv'
     else:
         metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8_C1.csv'
-    fn  = os.path.join(landsat_SR,metadataUrl.split(os.sep)[-1])
+    fn  = os.path.join(cacheDir,metadataUrl.split(os.sep)[-1])
     # looking to see if metadata CSV is available and if its up to the date needed
     if os.path.exists(fn):
         d = datetime.fromtimestamp(os.path.getmtime(fn))
-        l8_db_name = os.path.join(path,fn.split(os.sep)[-1][:-4]+'.db') 
+        l8_db_name = os.path.join(cacheDir,fn.split(os.sep)[-1][:-4]+'.db') 
         if not os.path.exists(l8_db_name):
             orig_df= pd.read_csv(fn)
             orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
@@ -259,7 +258,7 @@ def search(collection,lat,lon,start_date,end_date,cloud,available,landsat_SR):
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     else:
         wget.download(metadataUrl)
-        l8_db_name = os.path.join(path,fn.split(os.sep)[-1][:-4]+'.db') 
+        l8_db_name = os.path.join(cacheDir,fn.split(os.sep)[-1][:-4]+'.db') 
         conn = sqlite3.connect( l8_db_name )
         metadata= pd.read_csv(fn)
         metadata['sr'] = pd.Series(np.tile('N',len(metadata)))
@@ -296,8 +295,7 @@ def searchProduct(productID,db_path):
     conn.close()
     return output
 
-def createDB(dbRows,paths,landsat_SR):
-    path = os.path.abspath(os.path.join(landsat_SR,os.pardir))
+def createDB(dbRows,paths,cacheDir):
     end = datetime.today()
     # this is a landsat-util work around when it fails
     collection=1
@@ -305,11 +303,11 @@ def createDB(dbRows,paths,landsat_SR):
         metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8.csv'
     else:
         metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8_C1.csv'
-    fn  = os.path.join(landsat_SR,metadataUrl.split(os.sep)[-1])
+    fn  = os.path.join(cacheDir,metadataUrl.split(os.sep)[-1])
     # looking to see if metadata CSV is available and if its up to the date needed
     if os.path.exists(fn):
         d = datetime.fromtimestamp(os.path.getmtime(fn))
-        l8_db_name = os.path.join(path,fn.split(os.sep)[-1][:-4]+'.db')        
+        l8_db_name = os.path.join(cacheDir,fn.split(os.sep)[-1][:-4]+'.db')        
         if not os.path.exists(l8_db_name):
             orig_df= pd.read_csv(fn)
             orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
@@ -332,7 +330,7 @@ def createDB(dbRows,paths,landsat_SR):
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     else:
         wget.download(metadataUrl)
-        l8_db_name = os.path.join(path,fn.split(os.sep)[-1][:-4]+'.db') 
+        l8_db_name = os.path.join(cacheDir,fn.split(os.sep)[-1][:-4]+'.db') 
         conn = sqlite3.connect( l8_db_name )
         orig_df= pd.read_csv(fn)
         orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
@@ -353,8 +351,7 @@ def createDB(dbRows,paths,landsat_SR):
     conn.close()
 
 
-def updateDB(dbRows,paths,landsat_SR):
-    path = os.path.abspath(os.path.join(landsat_SR,os.pardir))
+def updateDB(dbRows,paths,cacheDir):
     end = datetime.strptime(str(dbRows.acquisitionDate.values[0]), '%Y-%m-%d')
     # this is a landsat-util work around when it fails
     collection=1
@@ -362,11 +359,11 @@ def updateDB(dbRows,paths,landsat_SR):
         metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8.csv'
     else:
         metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8_C1.csv'
-    fn  = os.path.join(landsat_SR,metadataUrl.split(os.sep)[-1])
+    fn  = os.path.join(cacheDir,metadataUrl.split(os.sep)[-1])
     # looking to see if metadata CSV is available and if its up to the date needed
     if os.path.exists(fn):
         d = datetime.fromtimestamp(os.path.getmtime(fn))
-        l8_db_name = os.path.join(path,fn.split(os.sep)[-1][:-4]+'.db') 
+        l8_db_name = os.path.join(cacheDir,fn.split(os.sep)[-1][:-4]+'.db') 
         print(l8_db_name)
         if not os.path.exists(l8_db_name):
             orig_df= pd.read_csv(fn)
@@ -390,7 +387,7 @@ def updateDB(dbRows,paths,landsat_SR):
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     else:
         wget.download(metadataUrl)
-        l8_db_name = os.path.join(path,fn.split(os.sep)[-1][:-4]+'.db') 
+        l8_db_name = os.path.join(cacheDir,fn.split(os.sep)[-1][:-4]+'.db') 
         conn = sqlite3.connect( l8_db_name )
         orig_df= pd.read_csv(fn)
         orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
@@ -588,10 +585,10 @@ def main():
     parser.add_argument("start_date", type=str, help="Start date yyyy-mm-dd")
     parser.add_argument("end_date", type=str, help="Start date yyyy-mm-dd")
     parser.add_argument("cloud", type=int, help="cloud coverage")
-    parser.add_argument("output_dir", type=str, help="Directory where to put landsat data")
     parser.add_argument("orderOrsearch", type=str, help="type 'order' for order and 'search'"
                         "for print search results or 'update' to update the database with existing data")
     parser.add_argument('-c','--cache', nargs='*',type=str, default=None, help='top directory for the landsat cache')
+    parser.add_argument('-f','--find', nargs='*',type=str, default=None, help='top directory to search for local files to be added to the main cache')
     args = parser.parse_args()
       
     loc = [args.lat,args.lon] 
@@ -602,6 +599,8 @@ def main():
     orderOrsearch = args.orderOrsearch
     cacheDir = args.cache
     cacheDir = cacheDir[0]
+    findDir = args.find
+    findDir = findDir[0]
     collection = 1
     
     # =====USGS credentials===============
@@ -617,9 +616,9 @@ def main():
     #======search for landsat data not on system===============================
     if orderOrsearch == 'search':
         available = 'N'
-        notDownloaded_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available,landsat_SR)
+        notDownloaded_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available,cacheDir)
         available = 'Y'
-        Downloaded_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available,landsat_SR)
+        Downloaded_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available,cacheDir)
         print("====data needed to be downloaded==============================")
         print(notDownloaded_df.LANDSAT_PRODUCT_ID.values)
         print("====data available on system==================================")
@@ -630,7 +629,7 @@ def main():
         #====find all landsat files on system==================================
         fns = []
         paths = []
-        for root, dirs, files in os.walk(landsat_SR):
+        for root, dirs, files in os.walk(findDir):
             for file in files:
                 if (file.startswith("LC08")) and (file.endswith(".tif")):
                      fns.append(os.path.join(root, file))
@@ -648,11 +647,12 @@ def main():
             scene = productID.split(os.sep)[-1].split('_')[2]
             print(scene)
             print(cacheDir)
-            folder = os.path.join(cacheDir,scene)
+            satellite = productID[3]
+            folder = os.path.join(cacheDir,"L%s" % satellite,scene)
             if not os.path.exists(folder):
                 os.mkdir(folder)
-            productIDdf = searchProduct(productID,landsat_SR)
-            updateDB(productIDdf,folder,landsat_SR)
+            productIDdf = searchProduct(productID,cacheDir)
+            updateDB(productIDdf,folder,cacheDir)
             
             for path in paths:
                 fns = glob.glob(os.path.join(path,"*%s*" % productID))
@@ -663,7 +663,7 @@ def main():
                      
     else:
         available = 'N'
-        output_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available,landsat_SR)
+        output_df = search(collection,loc[0],loc[1],start_date,end_date,cloud,available,cacheDir)
         
         sceneIDs = output_df.sceneID
         productIDs = output_df.LANDSAT_PRODUCT_ID
@@ -680,7 +680,8 @@ def main():
             inputFolder = folders_2move[i]
             i+=1
             scene = sceneID[3:9]
-            folder = os.path.join(landsat_SR,scene)
+            satellite = sceneID[2]
+            folder = os.path.join(cacheDir,"L%s" % satellite,scene)
             if not os.path.exists(folder):
                 os.mkdir(folder)
                 
@@ -688,7 +689,7 @@ def main():
                 shutil.copy(filename, folder) 
             paths.append(folder)
     
-        updateDB(output_df,paths,landsat_SR)
+        updateDB(output_df,paths,cacheDir)
     
      
         if len(folders_2move)>0:

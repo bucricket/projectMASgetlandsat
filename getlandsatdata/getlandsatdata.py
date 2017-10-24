@@ -245,7 +245,7 @@ def search(collection,lat,lon,start_date,end_date,cloud,available,cacheDir):
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
         else:
             conn = sqlite3.connect( l8_db_name )
-            orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
+#            orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
             
         if ((end.year>d.year) and (end.month>d.month) and (end.day>d.day)):
             wget.download(metadataUrl)

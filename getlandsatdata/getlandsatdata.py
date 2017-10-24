@@ -657,7 +657,8 @@ def main():
                 fns = glob.glob(os.path.join(path,"*%s*" % productID))
                 if len(fns)>0:
                     for filename in fns:
-                        shutil.copy(filename, folder) 
+                        if not os.path.exists(filename):
+                            shutil.copy(filename, folder) 
                     continue
                      
     else:

@@ -597,8 +597,7 @@ def main():
     orderOrsearch = args.orderOrsearch
     cacheDir = args.cache
     cacheDir = cacheDir[0]
-    findDir = args.find
-    findDir = findDir[0]
+
     collection = 1
     
     # =====USGS credentials===============
@@ -623,6 +622,8 @@ def main():
         print(Downloaded_df.LANDSAT_PRODUCT_ID.values)
         
     elif orderOrsearch == 'update':
+        findDir = args.find
+        findDir = findDir[0]
         
         #====find all landsat files on system==================================
         fns = []

@@ -586,7 +586,7 @@ def main():
     parser.add_argument("cloud", type=int, help="cloud coverage")
     parser.add_argument("orderOrsearch", type=str, help="type 'order' for order and 'search'"
                         "for print search results or 'update' to update the database with existing data")
-    parser.add_argument('-c','--cache', nargs='*',type=str, default=None, help='top directory for the landsat cache')
+    parser.add_argument("cache",type=str, default=None, help='top directory for the landsat cache')
     parser.add_argument('-f','--find', nargs='*',type=str, default=None, help='top directory to search for local files to be added to the main cache')
     args = parser.parse_args()
       
@@ -596,7 +596,7 @@ def main():
     cloud = args.cloud
     orderOrsearch = args.orderOrsearch
     cacheDir = args.cache
-    cacheDir = cacheDir[0]
+#    cacheDir = cacheDir[0]
 
     collection = 1
     

@@ -608,7 +608,7 @@ def main():
             scene = productID.split(os.sep)[-1].split('_')[2]
             folder = os.path.join(cacheDir,"L%d" % sat,scene)
             if not os.path.exists(folder):
-                os.mkdir(folder)
+                os.mkdirs(folder)
             folders.append(folder)
 #            orig_df = searchProduct(productID,cacheDir)
             orig_df = orig_df.append(searchProduct(productID,cacheDir),ignore_index=True)
@@ -648,7 +648,7 @@ def main():
             scene = sceneID[3:9]
             folder = os.path.join(cacheDir,"L%d" % sat,scene)
             if not os.path.exists(folder):
-                os.mkdir(folder)
+                os.mkdirs(folder)
                 
             for filename in glob.glob(os.path.join(inputFolder, '*.*')):
                 shutil.copy(filename, folder) 

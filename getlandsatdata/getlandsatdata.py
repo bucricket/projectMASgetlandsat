@@ -224,7 +224,7 @@ def check_order_cache(auth):
     return outDF
     
     
-def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat,sensor):
+def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat):
     end = datetime.strptime(end_date, '%Y-%m-%d')
     # this is a landsat-util work around when it fails
     if sat==7:
@@ -266,15 +266,23 @@ def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat,sensor):
         metadata['bt'] = pd.Series(np.tile('N',len(metadata)))
         metadata['local_file'] = ''
         metadata.to_sql("raw_data", conn, if_exists="replace", index=False)
-    
-    output = pd.read_sql_query("SELECT * from raw_data WHERE (acquisitionDate >= '%s')"
+    if sat == 8:
+        output = pd.read_sql_query("SELECT * from raw_data WHERE (acquisitionDate >= '%s')"
+                                   "AND (acquisitionDate < '%s') AND (upperLeftCornerLatitude > %f )"
+                                   "AND (upperLeftCornerLongitude < %f ) AND "
+                                   "(lowerRightCornerLatitude < %f) AND "
+                                   "(lowerRightCornerLongitude > %f) AND "
+                                   "(cloudCoverFull <= %d) AND (sr = '%s') AND "
+                                   "(sensor = 'OLI_TIRS')" % 
+                                   (start_date,end_date,lat,lon,lat,lon,cloud,available),conn)
+    else:
+             output = pd.read_sql_query("SELECT * from raw_data WHERE (acquisitionDate >= '%s')"
                                "AND (acquisitionDate < '%s') AND (upperLeftCornerLatitude > %f )"
                                "AND (upperLeftCornerLongitude < %f ) AND "
                                "(lowerRightCornerLatitude < %f) AND "
                                "(lowerRightCornerLongitude > %f) AND "
-                               "(cloudCoverFull <= %d) AND (sr = '%s') AND "
-                               "(sensor = '%s')" % 
-                               (start_date,end_date,lat,lon,lat,lon,cloud,available,sensor),conn)
+                               "(cloudCoverFull <= %d) AND (sr = '%s')" % 
+                               (start_date,end_date,lat,lon,lat,lon,cloud,available),conn)   
     conn.close()
     return output
 
@@ -621,9 +629,7 @@ def main():
                      
     else:
         available = 'N'
-        if sat == 8:
-            sensor = 'OLI_TIRS'
-        output_df = search(loc[0],loc[1],start_date,end_date,cloud,available,cacheDir,sat,sensor)
+        output_df = search(loc[0],loc[1],start_date,end_date,cloud,available,cacheDir,sat)
         
         sceneIDs = output_df.sceneID
         productIDs = output_df.LANDSAT_PRODUCT_ID

@@ -642,6 +642,8 @@ def main():
         productIDs = np.unique(productIDs)
         paths = np.unique(paths)
         #=========copy all landsat files to the cache and put cache location in the database
+        orig_df = pd.DataFrame()
+        folders = [] 
         for productID in productIDs:
             print(productID)
             scene = productID.split(os.sep)[-1].split('_')[2]
@@ -649,9 +651,12 @@ def main():
             folder = os.path.join(cacheDir,"L%s" % satellite,scene)
             if not os.path.exists(folder):
                 os.mkdir(folder)
-            productIDdf = searchProduct(productID,cacheDir)
-            updateDB(productIDdf,folder,cacheDir)
-            print(path)
+            folders.append(folder)
+#            orig_df = searchProduct(productID,cacheDir)
+            orig_df = orig_df.append(searchProduct(productID,cacheDir),ignore_index=True)
+        updateDB(orig_df,folders,cacheDir)
+        print(paths)
+        for productID in productIDs:
             for path in paths:                
                 fns = glob.glob(os.path.join(path,"*%s*" % productID))
                 if len(fns)>0:
@@ -659,7 +664,7 @@ def main():
                         fn = filename.split(os.sep)[-1]
                         outfn = os.path.join(folder,fn)
                         if not os.path.exists(outfn):
-                            print(productID)
+                            print("copying: %s " % productID)
                             shutil.copy(filename, folder) 
                     continue
                      

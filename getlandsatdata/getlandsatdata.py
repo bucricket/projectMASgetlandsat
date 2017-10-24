@@ -272,8 +272,8 @@ def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat,sensor):
                                "AND (upperLeftCornerLongitude < %f ) AND "
                                "(lowerRightCornerLatitude < %f) AND "
                                "(lowerRightCornerLongitude > %f) AND "
-                               "(cloudCoverFull <= %d) AND (sr = '%s') AND
-                               "(sensor = %s" % 
+                               "(cloudCoverFull <= %d) AND (sr = '%s') AND "
+                               "(sensor = %s)" % 
                                (start_date,end_date,lat,lon,lat,lon,cloud,available,sensor),conn)
     conn.close()
     return output

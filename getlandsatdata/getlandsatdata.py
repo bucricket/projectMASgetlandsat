@@ -241,7 +241,7 @@ def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat):
             orig_df= pd.read_csv(fn)
             orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
             orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
-            orig_df['local_file'] = ''
+            orig_df['local_file_path'] = ''
             conn = sqlite3.connect( db_name )
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
         else:
@@ -264,7 +264,7 @@ def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat):
         metadata= pd.read_csv(fn)
         metadata['sr'] = pd.Series(np.tile('N',len(metadata)))
         metadata['bt'] = pd.Series(np.tile('N',len(metadata)))
-        metadata['local_file'] = ''
+        metadata['local_file_path'] = ''
         metadata.to_sql("raw_data", conn, if_exists="replace", index=False)
     if sat == 8:
         output = pd.read_sql_query("SELECT * from raw_data WHERE (acquisitionDate >= '%s')"
@@ -302,7 +302,7 @@ def searchProduct(productID,db_path,sat):
         orig_df= pd.read_csv(fn)
         orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
         orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
-        orig_df['local_file'] = ''
+        orig_df['local_file_path'] = ''
         orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     else:
         conn = sqlite3.connect( db_name )    
@@ -328,7 +328,7 @@ def updateDB(dbRows,paths,cacheDir,sat):
             orig_df= pd.read_csv(fn)
             orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
             orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
-            orig_df['local_file'] = ''
+            orig_df['local_file_path'] = ''
             conn = sqlite3.connect( db_name )
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
         else:
@@ -351,7 +351,7 @@ def updateDB(dbRows,paths,cacheDir,sat):
         orig_df= pd.read_csv(fn)
         orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
         orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
-        orig_df['local_file'] = ''
+        orig_df['local_file_path'] = ''
         orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     #========updating database to reflect what is available on local system====
 #    orig_df = pd.read_sql_query("SELECT * from raw_data",conn)

@@ -607,7 +607,7 @@ def main():
         for productID in productIDs:
             print(productID)
             scene = productID.split(os.sep)[-1].split('_')[2]
-            folder = os.path.join(cacheDir,"L%d" % sat,scene)
+            folder = os.path.join(cacheDir,"L%d" % sat,scene,"RAW_DATA")
             if not os.path.exists(folder):
                 os.makedirs(folder)
             folders.append(folder)
@@ -617,7 +617,7 @@ def main():
             for path in paths:                
                 fns = glob.glob(os.path.join(path,"*%s*" % productID))
                 scene = productID.split(os.sep)[-1].split('_')[2]
-                folder = os.path.join(cacheDir,"L%d" % sat,scene)
+                folder = os.path.join(cacheDir,"L%d" % sat,scene,"RAW_DATA")
                 if len(fns)>0:
                     for filename in fns:
                         fn = filename.split(os.sep)[-1]

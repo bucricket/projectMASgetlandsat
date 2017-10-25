@@ -646,7 +646,7 @@ def main():
             inputFolder = folders_2move[i]
             i+=1
             scene = sceneID[3:9]
-            folder = os.path.join(cacheDir,"L%d" % sat,scene)
+            folder = os.path.join(cacheDir,"L%d" % sat,scene,"RAW_DATA")
             if not os.path.exists(folder):
                 os.makedirs(folder)
                 

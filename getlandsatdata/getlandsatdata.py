@@ -336,6 +336,7 @@ def updateDB(dbRows,paths,cacheDir,sat):
             orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
         
         if ((end.year>d.year) and (end.month>d.month) and (end.day>d.day)):
+            os.remove(fn)
             wget.download(metadataUrl,out=fn)
             metadata= pd.read_csv(fn)
             metadata['sr'] = pd.Series(np.tile('N',len(metadata)))

@@ -296,8 +296,8 @@ def searchProduct(productID,db_path,sat):
 
     fn  = os.path.join(db_path,metadataUrl.split(os.sep)[-1])
     if not os.path.exists(db_name):
-        wget.download(metadataUrl,out=fn)
-        shutil.move(metadataUrl.split(os.sep)[-1],fn)
+        if os.path.exists(fn):
+            wget.download(metadataUrl,out=fn)
         conn = sqlite3.connect( db_name )
         orig_df= pd.read_csv(fn)
         orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
@@ -612,6 +612,7 @@ def main():
                 os.makedirs(folder)
             folders.append(folder)
 #            orig_df = searchProduct(productID,cacheDir)
+            print("cache directory: %s" % cacheDir)
             orig_df = orig_df.append(searchProduct(productID,cacheDir,sat),ignore_index=True)
         print(folders)
         updateDB(orig_df,folders,cacheDir,sat)

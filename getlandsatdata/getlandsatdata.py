@@ -611,7 +611,7 @@ def main():
                 os.makedirs(folder)
             folders.append(folder)
 #            orig_df = searchProduct(productID,cacheDir)
-            orig_df = orig_df.append(searchProduct(productID,cacheDir),ignore_index=True)
+            orig_df = orig_df.append(searchProduct(productID,cacheDir,sat),ignore_index=True)
         print folders
         updateDB(orig_df,folders,cacheDir,sat)
         for productID in productIDs:

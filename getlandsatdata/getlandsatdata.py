@@ -590,7 +590,7 @@ def main():
         paths = []
         for root, dirs, files in os.walk(findDir):
             for file in files:
-                if (file.startswith("LC08")) and (file.endswith(".tif")):
+                if (file.startswith("LC08")) and (file.endswith("MTL.txt")):
                      fns.append(os.path.join(root, file))
                      paths.append(root)
         i = 0
@@ -599,8 +599,8 @@ def main():
             path = paths[i]
             i+=1
             productIDs.append('_'.join(fn.split(os.sep)[-1].split('_')[:7]))
-        productIDs = np.unique(productIDs)
-        paths = np.unique(paths)
+#        productIDs = np.unique(productIDs)
+#        paths = np.unique(paths)
         #=========copy all landsat files to the cache and put cache location in the database
         orig_df = pd.DataFrame()
         folders = [] 

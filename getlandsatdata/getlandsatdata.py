@@ -356,10 +356,12 @@ def updateDB(dbRows,paths,cacheDir,sat):
         orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     #========updating database to reflect what is available on local system====
 #    orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
-    for i in range(len(paths)):
-        dbRows.loc[i,'local_file_path'] = paths[i]
+    i=0
+    for path in paths:
+        dbRows.loc[i,'local_file_path'] = path
         dbRows.loc[i,'sr']='Y'
         dbRows.loc[i,'bt']='Y'
+        i+=1
         
     
     orig_df = orig_df.append(dbRows,ignore_index=True)

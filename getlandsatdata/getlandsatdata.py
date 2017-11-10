@@ -580,6 +580,7 @@ def main():
         print(notDownloaded_df.LANDSAT_PRODUCT_ID.values)
         print("====data available on system==================================")
         print(Downloaded_df.LANDSAT_PRODUCT_ID.values)
+        print(Downloaded_df.local_file_path)
         
     elif orderOrsearch == 'update':
         findDir = args.find

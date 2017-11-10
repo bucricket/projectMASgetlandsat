@@ -244,8 +244,7 @@ def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat):
             orig_df['local_file_path'] = ''
             conn = sqlite3.connect( db_name )
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
-        else:
-            conn = sqlite3.connect( db_name )
+            conn.close()
 #            orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
             
         if ((end.year>d.year) and (end.month>d.month) and (end.day>d.day)):
@@ -266,6 +265,8 @@ def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat):
         metadata['bt'] = pd.Series(np.tile('N',len(metadata)))
         metadata['local_file_path'] = ''
         metadata.to_sql("raw_data", conn, if_exists="replace", index=False)
+        conn.close()
+    conn = sqlite3.connect( db_name )
     if sat == 8:
         output = pd.read_sql_query("SELECT * from raw_data WHERE (acquisitionDate >= '%s')"
                                    "AND (acquisitionDate < '%s') AND (upperLeftCornerLatitude > %f )"
@@ -304,8 +305,9 @@ def searchProduct(productID,db_path,sat):
         orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
         orig_df['local_file_path'] = ''
         orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
-    else:
-        conn = sqlite3.connect( db_name )    
+        conn.close()
+
+    conn = sqlite3.connect( db_name )    
     output = pd.read_sql_query("SELECT * from raw_data WHERE (LANDSAT_PRODUCT_ID == '%s')" %  productID,conn)
     conn.close()
     return output
@@ -331,11 +333,14 @@ def updateDB(dbRows,paths,cacheDir,sat):
             orig_df['local_file_path'] = ''
             conn = sqlite3.connect( db_name )
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
+            conn.close()
         else:
             conn = sqlite3.connect( db_name )
             orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
+            conn.close()
         
         if ((end.year>d.year) and (end.month>d.month) and (end.day>d.day)):
+            conn = sqlite3.connect( db_name )
             os.remove(fn)
             wget.download(metadataUrl,out=fn)
             metadata= pd.read_csv(fn)
@@ -345,6 +350,7 @@ def updateDB(dbRows,paths,cacheDir,sat):
             orig_df = orig_df.append(metadata,ignore_index=True)
             orig_df = orig_df.drop_duplicates(subset='sceneID',keep='first')
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
+            conn.close()
     else:
         wget.download(metadataUrl,out=fn)
         db_name = os.path.join(cacheDir,fn.split(os.sep)[-1][:-4]+'.db') 
@@ -354,6 +360,8 @@ def updateDB(dbRows,paths,cacheDir,sat):
         orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
         orig_df['local_file_path'] = ''
         orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
+        conn.close()
+        
     #========updating database to reflect what is available on local system====
 #    orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
     i=0
@@ -363,7 +371,7 @@ def updateDB(dbRows,paths,cacheDir,sat):
         dbRows.loc[i,'bt']='Y'
         i+=1
         
-    
+    conn = sqlite3.connect( db_name )
     orig_df = orig_df.append(dbRows,ignore_index=True)
     orig_df = orig_df.drop_duplicates(subset='sceneID',keep='last')
     orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)

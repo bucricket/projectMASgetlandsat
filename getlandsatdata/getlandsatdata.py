@@ -595,8 +595,10 @@ def main():
                      paths.append(root)
         i = 0
         productIDs = []
-        for fn in fns:             
+        for fn in fns:        
+            print(fn)
             path = paths[i]
+            print(path)
             i+=1
             productIDs.append('_'.join(fn.split(os.sep)[-1].split('_')[:7]))
 #        productIDs = np.unique(productIDs)

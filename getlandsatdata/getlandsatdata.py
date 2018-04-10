@@ -570,6 +570,8 @@ def main():
     orderOrsearch = args.orderOrsearch
     cacheDir = args.cache
     sat = args.sat
+    if not os.path.exists(cacheDir):
+        os.makedirs(cacheDir)
 
     # =====USGS credentials===============
      # need to get this from pop up

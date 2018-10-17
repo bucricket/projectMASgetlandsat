@@ -15,7 +15,7 @@ except ImportError:
     from distutils.core import setup
     setup_kwargs = {'scripts': ['bin/getlandsatdata']}
     
-from getmodisdata import __version__
+from getlandsatdata import __version__
 
 
 
@@ -27,7 +27,8 @@ setup(
     author="Mitchell Schull",
     author_email="mitch.schull@noaa.gov",
     url="https://github.com/bucricket/projectMASgetmodis.git",
-    packages= ['getlandsatdata'],
+#    packages= ['getlandsatdata'],
+    py_modules=['getlandsatdata.getlandsatdata'],
     platforms='Posix; MacOS X; Windows',
     license='BSD 3-Clause',
     classifiers=[

@@ -25,26 +25,28 @@ import logging
 import tarfile
 import gzip
 import zipfile
+
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 logging.getLogger("urllib3").setLevel(logging.DEBUG)
 
 host = 'https://espa.cr.usgs.gov/api/v1/'
-TIMEOUT=86400
+TIMEOUT = 86400
+
 
 def espa_api(endpoint, verb='get', body=None, uauth=None):
     """ Suggested simple way to interact with the ESPA JSON REST API """
-#    auth_tup = uauth if uauth else print "need USGS creds!" exit()
+    #    auth_tup = uauth if uauth else print "need USGS creds!" exit()
     if uauth:
         auth_tup = uauth
     else:
-        print "need USGS creds!" 
+        print("need USGS creds!")
         exit()
-        
+
     response = getattr(requests, verb)(host + endpoint, auth=auth_tup, json=body)
     print('{} {}'.format(response.status_code, response.reason))
     data = response.json()
     if isinstance(data, dict):
-        messages = data.pop("messages", None)  
+        messages = data.pop("messages", None)
         if messages:
             print(json.dumps(messages, indent=4))
     try:
@@ -54,6 +56,8 @@ def espa_api(endpoint, verb='get', body=None, uauth=None):
         return None
     else:
         return data
+
+
 def extract_archive(source_path, destination_path=None, delete_originals=False):
     """
     Attempts to decompress the following formats for input filepath
@@ -164,12 +168,13 @@ class BaseDownloader(object):
         if cleanup and os.path.exists(raw_dest):
             os.remove(raw_dest)
         return ext_dest, fresh
-    
+
 
 def check_order_cache(auth):
     # This program checks the last month of orders from ESPA
     username = auth[0]
     password = auth[1]
+
     def api_request(endpoint, verb='get', json=None, uauth=None):
         """
         Here we can see how easy it is to handle calls to a REST API that uses JSON
@@ -177,7 +182,7 @@ def check_order_cache(auth):
         auth_tup = uauth if uauth else (username, password)
         response = getattr(requests, verb)(host + endpoint, auth=auth_tup, json=json)
         return response.json()
-    
+
     def espa_api(endpoint, verb='get', body=None, uauth=None):
         """ Suggested simple way to interact with the ESPA JSON REST API """
         auth_tup = uauth if uauth else (username, password)
@@ -185,7 +190,7 @@ def check_order_cache(auth):
         print('{} {}'.format(response.status_code, response.reason))
         data = response.json()
         if isinstance(data, dict):
-            messages = data.pop("messages", None)  
+            messages = data.pop("messages", None)
             if messages:
                 print(json.dumps(messages, indent=4))
         try:
@@ -195,78 +200,78 @@ def check_order_cache(auth):
             return None
         else:
             return data
-    
-#    usr = api_request('user')
-    
-#    order_list = api_request('list-orders/%s' % usr['email'])
+
+    #    usr = api_request('user')
+
+    #    order_list = api_request('list-orders/%s' % usr['email'])
     filters = {"status": ["complete", "ordered"]}  # Here, we ignore any purged orders
     order_list = espa_api('list-orders', body=filters)
-    orderID =[]
+    orderID = []
     fName = []
-    order_status=[]
-#    for i in range(len(order_list['orders'])):
-#        orderid = order_list['orders'][i]
+    order_status = []
+    #    for i in range(len(order_list['orders'])):
+    #        orderid = order_list['orders'][i]
     for i in range(len(order_list)):
         orderid = order_list[i]
         resp = espa_api('item-status/{0}'.format(orderid))
         ddd = json.loads(json.dumps(resp))
-#        if not ddd['orderid']['%s' % orderid][0]['status']=='purged':
+        #        if not ddd['orderid']['%s' % orderid][0]['status']=='purged':
         for j in range(len(ddd['%s' % orderid])):
             fname = ddd['%s' % orderid][j]['name']
             status = ddd['%s' % orderid][j]['status']
             orderID.append(orderid)
             fName.append(fname)
             order_status.append(status)
-                
-    output = {'orderid':orderID,'productID':fName,'status':order_status}
-    outDF = pd.DataFrame(output)  
-    
+
+    output = {'orderid': orderID, 'productID': fName, 'status': order_status}
+    outDF = pd.DataFrame(output)
+
     return outDF
-    
-    
-def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat):
+
+
+def search(lat, lon, start_date, end_date, cloud, available, cacheDir, sat):
     end = datetime.strptime(end_date, '%Y-%m-%d')
     # this is a landsat-util work around when it fails
-    if sat==7:
+    if sat == 7:
         metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_ETM_C1.csv'
     else:
         metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8_C1.csv'
-        
-    fn  = os.path.join(cacheDir,metadataUrl.split(os.sep)[-1])
+
+    fn = os.path.join(cacheDir, metadataUrl.split(os.sep)[-1])
     # looking to see if metadata CSV is available and if its up to the date needed
     if os.path.exists(fn):
         d = datetime.fromtimestamp(os.path.getmtime(fn))
-        db_name = os.path.join(cacheDir,fn.split(os.sep)[-1][:-4]+'.db') 
+        db_name = os.path.join(cacheDir, fn.split(os.sep)[-1][:-4] + '.db')
         if not os.path.exists(db_name):
-            orig_df= pd.read_csv(fn)
-            orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
-            orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
+            orig_df = pd.read_csv(fn)
+            orig_df['sr'] = pd.Series(np.tile('N', len(orig_df)))
+            orig_df['bt'] = pd.Series(np.tile('N', len(orig_df)))
             orig_df['local_file_path'] = ''
-            conn = sqlite3.connect( db_name )
+            conn = sqlite3.connect(db_name)
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
             conn.close()
-#            orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
-            
-        if ((end.year>d.year) and (end.month>d.month) and (end.day>d.day)):
-            wget.download(metadataUrl,out=fn)
-            metadata= pd.read_csv(fn)
-            metadata['sr'] = pd.Series(np.tile('N',len(metadata)))
-            metadata['bt'] = pd.Series(np.tile('N',len(metadata)))
-            orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
-            orig_df = orig_df.append(metadata,ignore_index=True)
-            orig_df = orig_df.drop_duplicates(subset='sceneID',keep='first')
+        #            orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
+
+        if (end.year > d.year) and (end.month > d.month) and (end.day > d.day):
+            wget.download(metadataUrl, out=fn)
+            metadata = pd.read_csv(fn)
+            metadata['sr'] = pd.Series(np.tile('N', len(metadata)))
+            metadata['bt'] = pd.Series(np.tile('N', len(metadata)))
+            orig_df = pd.read_sql_query("SELECT * from raw_data", conn)
+            orig_df = orig_df.append(metadata, ignore_index=True)
+            orig_df = orig_df.drop_duplicates(subset='sceneID', keep='first')
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     else:
-        wget.download(metadataUrl,out=fn)
-        db_name = os.path.join(cacheDir,fn.split(os.sep)[-1][:-4]+'.db') 
-        conn = sqlite3.connect( db_name )
-        metadata= pd.read_csv(fn)
-        metadata['sr'] = pd.Series(np.tile('N',len(metadata)))
-        metadata['bt'] = pd.Series(np.tile('N',len(metadata)))
+        wget.download(metadataUrl, out=fn)
+        db_name = os.path.join(cacheDir, fn.split(os.sep)[-1][:-4] + '.db')
+        conn = sqlite3.connect(db_name)
+        metadata = pd.read_csv(fn)
+        metadata['sr'] = pd.Series(np.tile('N', len(metadata)))
+        metadata['bt'] = pd.Series(np.tile('N', len(metadata)))
         metadata['local_file_path'] = ''
         metadata.to_sql("raw_data", conn, if_exists="replace", index=False)
         conn.close()
-    conn = sqlite3.connect( db_name )
+    conn = sqlite3.connect(db_name)
     if sat == 8:
         output = pd.read_sql_query("SELECT * from raw_data WHERE (acquisitionDate >= '%s')"
                                    "AND (acquisitionDate < '%s') AND (upperLeftCornerLatitude > %f )"
@@ -274,111 +279,111 @@ def search(lat,lon,start_date,end_date,cloud,available,cacheDir,sat):
                                    "(lowerRightCornerLatitude < %f) AND "
                                    "(lowerRightCornerLongitude > %f) AND "
                                    "(cloudCoverFull <= %d) AND (sr = '%s') AND "
-                                   "(sensor = 'OLI_TIRS')" % 
-                                   (start_date,end_date,lat,lon,lat,lon,cloud,available),conn)
+                                   "(sensor = 'OLI_TIRS')" %
+                                   (start_date, end_date, lat, lon, lat, lon, cloud, available), conn)
     else:
-             output = pd.read_sql_query("SELECT * from raw_data WHERE (acquisitionDate >= '%s')"
-                               "AND (acquisitionDate < '%s') AND (upperLeftCornerLatitude > %f )"
-                               "AND (upperLeftCornerLongitude < %f ) AND "
-                               "(lowerRightCornerLatitude < %f) AND "
-                               "(lowerRightCornerLongitude > %f) AND "
-                               "(cloudCoverFull <= %d) AND (sr = '%s')" % 
-                               (start_date,end_date,lat,lon,lat,lon,cloud,available),conn)   
+        output = pd.read_sql_query("SELECT * from raw_data WHERE (acquisitionDate >= '%s')"
+                                   "AND (acquisitionDate < '%s') AND (upperLeftCornerLatitude > %f )"
+                                   "AND (upperLeftCornerLongitude < %f ) AND "
+                                   "(lowerRightCornerLatitude < %f) AND "
+                                   "(lowerRightCornerLongitude > %f) AND "
+                                   "(cloudCoverFull <= %d) AND (sr = '%s')" %
+                                   (start_date, end_date, lat, lon, lat, lon, cloud, available), conn)
     conn.close()
     return output
 
-def searchProduct(productID,db_path,sat):
-    if sat==7:
+
+def searchProduct(productID, db_path, sat):
+    if sat == 7:
         metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_ETM_C1.csv'
-        db_name = os.path.join(db_path,'LANDSAT_ETM_C1.db') 
+        db_name = os.path.join(db_path, 'LANDSAT_ETM_C1.db')
     else:
         metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8_C1.csv'
-        db_name = os.path.join(db_path,'LANDSAT_8_C1.db') 
+        db_name = os.path.join(db_path, 'LANDSAT_8_C1.db')
 
-    fn  = os.path.join(db_path,metadataUrl.split(os.sep)[-1])
+    fn = os.path.join(db_path, metadataUrl.split(os.sep)[-1])
     if not os.path.exists(db_name):
         if not os.path.exists(fn):
-            wget.download(metadataUrl,out=fn)
-        conn = sqlite3.connect( db_name )
-        orig_df= pd.read_csv(fn)
-        orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
-        orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
+            wget.download(metadataUrl, out=fn)
+        conn = sqlite3.connect(db_name)
+        orig_df = pd.read_csv(fn)
+        orig_df['sr'] = pd.Series(np.tile('N', len(orig_df)))
+        orig_df['bt'] = pd.Series(np.tile('N', len(orig_df)))
         orig_df['local_file_path'] = ''
         orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
         conn.close()
 
-    conn = sqlite3.connect( db_name )    
-    output = pd.read_sql_query("SELECT * from raw_data WHERE (LANDSAT_PRODUCT_ID == '%s')" %  productID,conn)
+    conn = sqlite3.connect(db_name)
+    output = pd.read_sql_query("SELECT * from raw_data WHERE (LANDSAT_PRODUCT_ID == '%s')" % productID, conn)
     conn.close()
     return output
 
 
-def updateDB(dbRows,paths,cacheDir,sat):
+def updateDB(dbRows, paths, cacheDir, sat):
     end = datetime.strptime(str(dbRows.acquisitionDate.values[0]), '%Y-%m-%d')
     # this is a landsat-util work around when it fails
-    if sat==7:
+    if sat == 7:
         metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_ETM_C1.csv'
     else:
         metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8_C1.csv'
-        
-    fn  = os.path.join(cacheDir,metadataUrl.split(os.sep)[-1])
+
+    fn = os.path.join(cacheDir, metadataUrl.split(os.sep)[-1])
     # looking to see if metadata CSV is available and if its up to the date needed
     if os.path.exists(fn):
         d = datetime.fromtimestamp(os.path.getmtime(fn))
-        db_name = os.path.join(cacheDir,fn.split(os.sep)[-1][:-4]+'.db') 
+        db_name = os.path.join(cacheDir, fn.split(os.sep)[-1][:-4] + '.db')
         if not os.path.exists(db_name):
-            orig_df= pd.read_csv(fn)
-            orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
-            orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
+            orig_df = pd.read_csv(fn)
+            orig_df['sr'] = pd.Series(np.tile('N', len(orig_df)))
+            orig_df['bt'] = pd.Series(np.tile('N', len(orig_df)))
             orig_df['local_file_path'] = ''
-            conn = sqlite3.connect( db_name )
+            conn = sqlite3.connect(db_name)
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
             conn.close()
         else:
-            conn = sqlite3.connect( db_name )
-            orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
+            conn = sqlite3.connect(db_name)
+            orig_df = pd.read_sql_query("SELECT * from raw_data", conn)
             conn.close()
-        
-        if ((end.year>d.year) and (end.month>d.month) and (end.day>d.day)):
-            conn = sqlite3.connect( db_name )
+
+        if (end.year > d.year) and (end.month > d.month) and (end.day > d.day):
+            conn = sqlite3.connect(db_name)
             os.remove(fn)
-            wget.download(metadataUrl,out=fn)
-            metadata= pd.read_csv(fn)
-            metadata['sr'] = pd.Series(np.tile('N',len(metadata)))
-            metadata['bt'] = pd.Series(np.tile('N',len(metadata)))
-            orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
-            orig_df = orig_df.append(metadata,ignore_index=True)
-            orig_df = orig_df.drop_duplicates(subset='sceneID',keep='first')
+            wget.download(metadataUrl, out=fn)
+            metadata = pd.read_csv(fn)
+            metadata['sr'] = pd.Series(np.tile('N', len(metadata)))
+            metadata['bt'] = pd.Series(np.tile('N', len(metadata)))
+            orig_df = pd.read_sql_query("SELECT * from raw_data", conn)
+            orig_df = orig_df.append(metadata, ignore_index=True)
+            orig_df = orig_df.drop_duplicates(subset='sceneID', keep='first')
             orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
             conn.close()
     else:
-        wget.download(metadataUrl,out=fn)
-        db_name = os.path.join(cacheDir,fn.split(os.sep)[-1][:-4]+'.db') 
-        conn = sqlite3.connect( db_name )
-        orig_df= pd.read_csv(fn)
-        orig_df['sr'] = pd.Series(np.tile('N',len(orig_df)))
-        orig_df['bt'] = pd.Series(np.tile('N',len(orig_df)))
+        wget.download(metadataUrl, out=fn)
+        db_name = os.path.join(cacheDir, fn.split(os.sep)[-1][:-4] + '.db')
+        conn = sqlite3.connect(db_name)
+        orig_df = pd.read_csv(fn)
+        orig_df['sr'] = pd.Series(np.tile('N', len(orig_df)))
+        orig_df['bt'] = pd.Series(np.tile('N', len(orig_df)))
         orig_df['local_file_path'] = ''
         orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
         conn.close()
-        
-    #========updating database to reflect what is available on local system====
-#    orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
-    i=0
+
+    # ========updating database to reflect what is available on local system====
+    #    orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
+    i = 0
     for path in paths:
-        dbRows.loc[i,'local_file_path'] = path
-        dbRows.loc[i,'sr']='Y'
-        dbRows.loc[i,'bt']='Y'
-        i+=1
-        
-    conn = sqlite3.connect( db_name )
-    orig_df = orig_df.append(dbRows,ignore_index=True)
-    orig_df = orig_df.drop_duplicates(subset='sceneID',keep='last')
+        dbRows.loc[i, 'local_file_path'] = path
+        dbRows.loc[i, 'sr'] = 'Y'
+        dbRows.loc[i, 'bt'] = 'Y'
+        i += 1
+
+    conn = sqlite3.connect(db_name)
+    orig_df = orig_df.append(dbRows, ignore_index=True)
+    orig_df = orig_df.drop_duplicates(subset='sceneID', keep='last')
     orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
     conn.close()
-    
 
-    
+
 def download_order_gen(order_id, auth, downloader=None, sleep_time=300, timeout=86400, **dlkwargs):
     """
     This function is a generator that yields the results from the input downloader classes
@@ -408,8 +413,8 @@ def download_order_gen(order_id, auth, downloader=None, sleep_time=300, timeout=
         print("Elapsed time is {0}m".format(elapsed_time / 60.0))
 
         # check order completion status, and list all items which ARE complete
-#            complete_items = self._complete_items(order_id, verbose=False)
-        
+        #            complete_items = self._complete_items(order_id, verbose=False)
+
         filters = {"status": "complete"}  # Here, we ignore any purged orders
         complete_items = espa_api('item-status/{0}'.format(order_id), uauth=auth, body=filters)[order_id]
         for c in complete_items:
@@ -423,21 +428,22 @@ def download_order_gen(order_id, auth, downloader=None, sleep_time=300, timeout=
         resp = espa_api('item-status/{0}'.format(order_id), uauth=auth)
         all_items = resp[order_id]
 
-
         active_items = [item for item in all_items
-        if item['status'] != 'complete' and
-        item['status'] != 'error' and
-        item['status'] != 'unavailable' and 
-        item['status'] != 'purged']
+                        if item['status'] != 'complete' and
+                        item['status'] != 'error' and
+                        item['status'] != 'unavailable' and
+                        item['status'] != 'purged']
 
         complete = (len(active_items) < 1)
         if not complete:
             sleep(sleep_time)
 
-def get_landsat_data(sceneIDs,auth):
+
+def get_landsat_data(sceneIDs, auth):
     username = auth[0]
     password = auth[1]
-#    client = Client(auth)
+
+    #    client = Client(auth)
     def api_request(endpoint, verb='get', json=None, uauth=None):
         """
         Here we can see how easy it is to handle calls to a REST API that uses JSON
@@ -445,23 +451,23 @@ def get_landsat_data(sceneIDs,auth):
         auth_tup = uauth if uauth else (username, password)
         response = getattr(requests, verb)(host + endpoint, auth=auth_tup, json=json)
         return response.json()
-    
-    #=====set products=======
-    l8_prods = ['sr','bt']
-    #=====search for data=======
+
+    # =====set products=======
+    l8_prods = ['sr', 'bt']
+    # =====search for data=======
     print("Searching...")
     ordered_data = check_order_cache(auth)
-    l8_tiles =[]
+    l8_tiles = []
     orderedIDs_completed = []
     orderedIDs_not_completed = []
     sceneIDs_completed = []
-    sceneIDs_not_completed =[]
+    sceneIDs_not_completed = []
     for sceneID in sceneIDs:
         if not ordered_data.empty:
-            if np.sum(ordered_data.productID==sceneID)>0:
-                completed_test = (ordered_data.productID==sceneID) & (ordered_data.status=='complete')
-                not_complete_test = (ordered_data.productID==sceneID) & (ordered_data.status!='complete')
-                if len(ordered_data[completed_test])>0:
+            if np.sum(ordered_data.productID == sceneID) > 0:
+                completed_test = (ordered_data.productID == sceneID) & (ordered_data.status == 'complete')
+                not_complete_test = (ordered_data.productID == sceneID) & (ordered_data.status != 'complete')
+                if len(ordered_data[completed_test]) > 0:
                     orderedIDs_completed.append(list(ordered_data.orderid[completed_test])[0])
                     sceneIDs_completed.append(sceneID)
                 else:
@@ -471,55 +477,54 @@ def get_landsat_data(sceneIDs,auth):
                 l8_tiles.append(sceneID)
         else:
             l8_tiles.append(sceneID)
-    
+
     if l8_tiles:
         print("Ordering new data...")
-        #========setup order=========
-        order = espa_api('available-products',uauth=auth, body=dict(inputs=l8_tiles))
+        # ========setup order=========
+        order = espa_api('available-products', uauth=auth, body=dict(inputs=l8_tiles))
         for sensor in order.keys():
             if isinstance(order[sensor], dict) and order[sensor].get('inputs'):
                 order[sensor]['products'] = l8_prods
-        
+
         order['format'] = 'gtiff'
         # =======order the data============
-        resp = espa_api('order', verb='post',uauth=auth, body=order)
+        resp = espa_api('order', verb='post', uauth=auth, body=order)
         print(json.dumps(resp, indent=4))
         orderidNew = resp['orderid']
-                    
+
     if orderedIDs_completed:
-        
+
         print("downloading completed existing orders...")
-        print orderedIDs_completed
+        print(orderedIDs_completed)
         i = -1
         for orderid in orderedIDs_completed:
-            i+=1
+            i += 1
             sceneID = sceneIDs_completed[i]
             complete = False
             reached_TIMEOUT = False
             starttime = datetime.now()
             while not complete and not reached_TIMEOUT:
-                resp = espa_api('item-status/{0}'.format(orderid),uauth=auth)
+                resp = espa_api('item-status/{0}'.format(orderid), uauth=auth)
                 for item in resp[orderid]:
-                    if item.get('name')==sceneID:
-                        url = item.get('product_dload_url')                      
+                    if item.get('name') == sceneID:
+                        url = item.get('product_dload_url')
                         elapsed_time = (datetime.now() - starttime).seconds
                         reached_TIMEOUT = elapsed_time > TIMEOUT
                         print("Elapsed time is {0}m".format(elapsed_time / 60.0))
-                        if len(url)>0:
+                        if len(url) > 0:
                             downloader = BaseDownloader('espa_downloads')
                             downloader.download(url)
-                        #if os.path.exists(os.path.join(os.getcwd,'espa_downloads',url.split(os.sep)[-1][:-7])):
+                            # if os.path.exists(os.path.join(os.getcwd,'espa_downloads',url.split(os.sep)[-1][:-7])):
                             complete = True
-                        
+
                         if not complete:
                             sleep(300)
-                        
-                        
+
     if orderedIDs_not_completed:
         print("waiting for cached existing orders...")
         i = -1
         for orderid in orderedIDs_not_completed:
-            i+=1
+            i += 1
             complete = False
             reached_TIMEOUT = False
             starttime = datetime.now()
@@ -527,26 +532,27 @@ def get_landsat_data(sceneIDs,auth):
             while not complete and not reached_TIMEOUT:
                 resp = api_request('item-status/{0}'.format(orderid))
                 for item in resp[orderid]:
-                    if item.get('name')==sceneID:
+                    if item.get('name') == sceneID:
                         url = item.get('product_dload_url')
                         elapsed_time = (datetime.now() - starttime).seconds
                         reached_TIMEOUT = elapsed_time > TIMEOUT
                         print("Elapsed time is {0}m".format(elapsed_time / 60.0))
-                        if len(url)>0:
-                            downloader = BaseDownloader('espa_downloads')                            
+                        if len(url) > 0:
+                            downloader = BaseDownloader('espa_downloads')
                             downloader.download(url)
-                        #if os.path.exists(os.path.join(os.getcwd,'espa_downloads',url.split(os.sep)[-1][:-7])):
+                            # if os.path.exists(os.path.join(os.getcwd,'espa_downloads',url.split(os.sep)[-1][:-7])):
                             complete = True
-                        
+
                         if not complete:
                             sleep(300)
 
     if l8_tiles:
-        print("Download new data...")       
-        #======Download data=========    
-        for download in download_order_gen(orderidNew,auth):
+        print("Download new data...")
+        # ======Download data=========
+        for download in download_order_gen(orderidNew, auth):
             print(download)
-            
+
+
 def main():
     # Get time and location from user
     parser = argparse.ArgumentParser()
@@ -556,14 +562,17 @@ def main():
     parser.add_argument("end_date", type=str, help="Start date yyyy-mm-dd")
     parser.add_argument("cloud", type=int, help="cloud coverage")
     parser.add_argument("orderOrsearch", type=str, help="type 'order' for order and 'search'"
-                        "for print search results or 'update' to update the database with existing data")
-    cacheDir = os.path.abspath(os.path.join(os.getcwd(),os.pardir,"SATELLITE_DATA","LANDSAT")) 
-    parser.add_argument('-c',"--cache", nargs='*',type=str, default=cacheDir, help='top directory for the landsat cache')
-    parser.add_argument('-s','--sat', nargs='?',type=int, default=8, help='which landsat to search or download, i.e. Landsat 8 = 8')   
-    parser.add_argument('-f','--find', nargs='*',type=str, default=None, help='top directory to search for local files to be added to the main cache')
+                                                        "for print search results or 'update' to update the database with existing data")
+    cacheDir = os.path.abspath(os.path.join(os.getcwd(), os.pardir, "SATELLITE_DATA", "LANDSAT"))
+    parser.add_argument('-c', "--cache", nargs='*', type=str, default=cacheDir,
+                        help='top directory for the landsat cache')
+    parser.add_argument('-s', '--sat', nargs='?', type=int, default=8,
+                        help='which landsat to search or download, i.e. Landsat 8 = 8')
+    parser.add_argument('-f', '--find', nargs='*', type=str, default=None,
+                        help='top directory to search for local files to be added to the main cache')
     args = parser.parse_args()
-      
-    loc = [args.lat,args.lon] 
+
+    loc = [args.lat, args.lon]
     start_date = args.start_date
     end_date = args.end_date
     cloud = args.cloud
@@ -576,109 +585,107 @@ def main():
         print(cacheDir)
 
     # =====USGS credentials===============
-     # need to get this from pop up
+    # need to get this from pop up
     usgs_user = str(getpass.getpass(prompt="usgs username:"))
-    if keyring.get_password("usgs",usgs_user)==None:
+    if keyring.get_password("usgs", usgs_user) is None:
         usgs_pass = str(getpass.getpass(prompt="usgs password:"))
-        keyring.set_password("usgs",usgs_user,usgs_pass)
+        keyring.set_password("usgs", usgs_user, usgs_pass)
     else:
-        usgs_pass = str(keyring.get_password("usgs",usgs_user)) 
+        usgs_pass = str(keyring.get_password("usgs", usgs_user))
 
-        
-    #======search for landsat data not on system===============================
+        # ======search for landsat data not on system===============================
     if orderOrsearch == 'search':
         available = 'N'
-        notDownloaded_df = search(loc[0],loc[1],start_date,end_date,cloud,available,cacheDir,sat)
+        notDownloaded_df = search(loc[0], loc[1], start_date, end_date, cloud, available, cacheDir, sat)
         available = 'Y'
-        Downloaded_df = search(loc[0],loc[1],start_date,end_date,cloud,available,cacheDir,sat)
+        Downloaded_df = search(loc[0], loc[1], start_date, end_date, cloud, available, cacheDir, sat)
         print("====data needed to be downloaded==============================")
         print(notDownloaded_df.LANDSAT_PRODUCT_ID.values)
         print("====data available on system==================================")
         print(Downloaded_df.LANDSAT_PRODUCT_ID.values)
         print(Downloaded_df.local_file_path)
-        
+
     elif orderOrsearch == 'update':
         findDir = args.find
         findDir = findDir[0]
-        
-        #====find all landsat files on system==================================
+
+        # ====find all landsat files on system==================================
         fns = []
         paths = []
         for root, dirs, files in os.walk(findDir):
             for file in files:
                 if (file.startswith("LC08")) and (file.endswith("MTL.txt")):
-                     fns.append(os.path.join(root, file))
-                     paths.append(root)
+                    fns.append(os.path.join(root, file))
+                    paths.append(root)
         i = 0
         productIDs = []
-        for fn in fns:        
+        for fn in fns:
             print(fn)
             path = paths[i]
             print(path)
-            i+=1
+            i += 1
             productIDs.append('_'.join(fn.split(os.sep)[-1].split('_')[:7]))
-#        productIDs = np.unique(productIDs)
-#        paths = np.unique(paths)
-        #=========copy all landsat files to the cache and put cache location in the database
+        #        productIDs = np.unique(productIDs)
+        #        paths = np.unique(paths)
+        # =========copy all landsat files to the cache and put cache location in the database
         orig_df = pd.DataFrame()
-        folders = [] 
+        folders = []
         for productID in productIDs:
             print(productID)
             scene = productID.split(os.sep)[-1].split('_')[2]
-            folder = os.path.join(cacheDir,"L%d" % sat,scene,"RAW_DATA")
+            folder = os.path.join(cacheDir, "L%d" % sat, scene, "RAW_DATA")
             if not os.path.exists(folder):
                 os.makedirs(folder)
             folders.append(folder)
-            orig_df = orig_df.append(searchProduct(productID,cacheDir,sat),ignore_index=True)
-        updateDB(orig_df,folders,cacheDir,sat)
+            orig_df = orig_df.append(searchProduct(productID, cacheDir, sat), ignore_index=True)
+        updateDB(orig_df, folders, cacheDir, sat)
         for productID in productIDs:
-            for path in paths:                
-                fns = glob.glob(os.path.join(path,"*%s*" % productID))
+            for path in paths:
+                fns = glob.glob(os.path.join(path, "*%s*" % productID))
                 scene = productID.split(os.sep)[-1].split('_')[2]
-                folder = os.path.join(cacheDir,"L%d" % sat,scene,"RAW_DATA")
-                if len(fns)>0:
+                folder = os.path.join(cacheDir, "L%d" % sat, scene, "RAW_DATA")
+                if len(fns) > 0:
                     for filename in fns:
                         fn = filename.split(os.sep)[-1]
-                        outfn = os.path.join(folder,fn)
+                        outfn = os.path.join(folder, fn)
                         if not os.path.exists(outfn):
                             print("copying: %s " % productID)
-                            shutil.copy(filename, folder) 
+                            shutil.copy(filename, folder)
                     continue
-                     
+
     else:
         available = 'N'
-        output_df = search(loc[0],loc[1],start_date,end_date,cloud,available,cacheDir,sat)
-        
+        output_df = search(loc[0], loc[1], start_date, end_date, cloud, available, cacheDir, sat)
+
         sceneIDs = output_df.sceneID
         productIDs = output_df.LANDSAT_PRODUCT_ID
-            
-        #start Landsat order process
-        get_landsat_data(productIDs,("%s"% usgs_user,"%s"% usgs_pass))
-        
-        #========move surface relectance files=====================================
-        download_folder = os.path.join(os.getcwd(),'espa_downloads')
-        folders_2move = glob.glob(os.path.join(download_folder ,'*'))
-        i=0
+
+        # start Landsat order process
+        get_landsat_data(productIDs, ("%s" % usgs_user, "%s" % usgs_pass))
+
+        # ========move surface relectance files=====================================
+        download_folder = os.path.join(os.getcwd(), 'espa_downloads')
+        folders_2move = glob.glob(os.path.join(download_folder, '*'))
+        i = 0
         paths = []
-        for sceneID in sceneIDs:        
+        for sceneID in sceneIDs:
             inputFolder = folders_2move[i]
-            i+=1
+            i += 1
             scene = sceneID[3:9]
-            folder = os.path.join(cacheDir,"L%d" % sat,scene,"RAW_DATA")
+            folder = os.path.join(cacheDir, "L%d" % sat, scene, "RAW_DATA")
             if not os.path.exists(folder):
                 os.makedirs(folder)
-                
+
             for filename in glob.glob(os.path.join(inputFolder, '*.*')):
-                shutil.copy(filename, folder) 
+                shutil.copy(filename, folder)
             paths.append(folder)
-    
-        updateDB(output_df,paths,cacheDir,sat)
-    
-     
-        if len(folders_2move)>0:
-                #======Clean up folder===============================
-                shutil.rmtree(download_folder)
-    
+
+        updateDB(output_df, paths, cacheDir, sat)
+
+        if len(folders_2move) > 0:
+            # ======Clean up folder===============================
+            shutil.rmtree(download_folder)
+
         print("All done downloading data!!")
 
 
@@ -686,4 +693,4 @@ if __name__ == "__main__":
     try:
         main()
     except (KeyboardInterrupt, pycurl.error):
-        exit('Received Ctrl + C... Exiting! Bye.', 1)  
+        exit('Received Ctrl + C... Exiting! Bye.', 1)

@@ -278,7 +278,7 @@ def search(lat, lon, start_date, end_date, cloud, available, cacheDir, sat):
                                    "AND (upperLeftCornerLongitude < %f ) AND "
                                    "(lowerRightCornerLatitude < %f) AND "
                                    "(lowerRightCornerLongitude > %f) AND "
-                                   "(cloudCoverFull <= %d) AND (sr = '%s') AND "
+                                   "(cloudCover <= %d) AND (sr = '%s') AND "
                                    "(sensor = 'OLI_TIRS')" %
                                    (start_date, end_date, lat, lon, lat, lon, cloud, available), conn)
     else:
@@ -287,7 +287,7 @@ def search(lat, lon, start_date, end_date, cloud, available, cacheDir, sat):
                                    "AND (upperLeftCornerLongitude < %f ) AND "
                                    "(lowerRightCornerLatitude < %f) AND "
                                    "(lowerRightCornerLongitude > %f) AND "
-                                   "(cloudCoverFull <= %d) AND (sr = '%s')" %
+                                   "(cloudCover <= %d) AND (sr = '%s')" %
                                    (start_date, end_date, lat, lon, lat, lon, cloud, available), conn)
     conn.close()
     return output

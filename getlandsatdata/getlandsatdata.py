@@ -564,7 +564,7 @@ def main():
     parser.add_argument("orderOrsearch", type=str, help="type 'order' for order and 'search'"
                                                         "for print search results or 'update' to update the database with existing data")
     cacheDir = os.path.abspath(os.path.join(os.getcwd(), os.pardir, "SATELLITE_DATA", "LANDSAT"))
-    parser.add_argument('-c', "--cache", nargs='*', type=str, default=cacheDir,
+    parser.add_argument('-c', "--cache", nargs='?', type=str, default=cacheDir,
                         help='top directory for the landsat cache')
     parser.add_argument('-s', '--sat', nargs='?', type=int, default=8,
                         help='which landsat to search or download, i.e. Landsat 8 = 8')

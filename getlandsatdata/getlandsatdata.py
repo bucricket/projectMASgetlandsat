@@ -267,19 +267,35 @@ def intersection(lst1, lst2):
     return lst3
 
 
-def find_already_downloaded(df):
+def find_already_downloaded(df, cache_dir):
     usgs_available = list(df.LANDSAT_PRODUCT_ID.values)
-    available = [os.path.basename(x) for x in
-                 glob.glob('/Users/mschull/umdGD/DISALEXI/SATELLITE_DATA/LANDSAT/L8/160043/RAW_DATA/*MTL*')]
-    available = [x[:-8] for x in available]
-    return intersection(usgs_available, available)
+    # find sat
+    sat = usgs_available[0].split("_")[0][-1]
+    # find scenes
+    scenes = [x.split("_")[2] for x in usgs_available]
+    scenes = list(set(scenes))
+    available_list = []
+    for scene in scenes:
+        available = [os.path.basename(x) for x in
+                     glob.glob(os.path.join(cache_dir,'L%s/%s/RAW_DATA/*MTL*' % (sat, scene )))]
+        available = [x[:-8] for x in available]
+        available_list = available_list + available
+    return intersection(usgs_available, available_list)
 
 
-def find_not_downloaded(df):
+def find_not_downloaded(df, cache_dir):
     usgs_available = list(df.LANDSAT_PRODUCT_ID.values)
-    available = [os.path.basename(x) for x in
-                 glob.glob('/Users/mschull/umdGD/DISALEXI/SATELLITE_DATA/LANDSAT/L8/160043/RAW_DATA/*MTL*')]
-    available = [x[:-8] for x in available]
+    # find sat
+    sat = usgs_available[0].split("_")[0][-1]
+    # find scenes
+    scenes = [x.split("_")[2] for x in usgs_available]
+    scenes = list(set(scenes))
+    available_list = []
+    for scene in scenes:
+        available = [os.path.basename(x) for x in
+                     glob.glob(os.path.join(cache_dir,'L%s/%s/RAW_DATA/*MTL*' % (sat, scene )))]
+        available = [x[:-8] for x in available]
+        available_list = available_list + available
     for x in available:
         usgs_available.remove(x)
 
@@ -494,9 +510,9 @@ def main():
     if orderOrsearch == 'search':
         output_df = search(loc[0], loc[1], start_date, end_date, cloud, cacheDir, sat)
         print("====data needed to be downloaded==============================")
-        print(find_not_downloaded(output_df))
+        print(find_not_downloaded(output_df, cacheDir))
         print("====data available on system==================================")
-        print(find_already_downloaded(output_df))
+        print(find_already_downloaded(output_df, cacheDir))
 
     elif orderOrsearch == 'update':
         findDir = args.find
@@ -536,7 +552,7 @@ def main():
     else:
         output_df = search(loc[0], loc[1], start_date, end_date, cloud, cacheDir, sat)
 
-        productIDs = find_not_downloaded(output_df)
+        productIDs = find_not_downloaded(output_df,cacheDir)
 
         # start Landsat order process
         get_landsat_data(productIDs, ("%s" % usgs_user, "%s" % usgs_pass))

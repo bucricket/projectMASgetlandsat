@@ -11,13 +11,11 @@ import glob
 import shutil
 import pandas as pd
 from datetime import datetime
-from datetime import date as dt
 import wget
 import argparse
 import getpass
 import keyring
 import json
-import sqlite3
 import pycurl
 import requests
 from time import sleep
@@ -229,9 +227,9 @@ def check_order_cache(auth):
     return outDF
 
 
-def search(lat, lon, start_date, end_date, cloud, available, cacheDir, sat):
-    columns = ['acquisitionDate', 'acquisitionDate','upperLeftCornerLatitude', 'upperLeftCornerLongitude',
-               'lowerRightCornerLatitude' , 'lowerRightCornerLongitude', 'cloudCover']
+def search(lat, lon, start_date, end_date, cloud, cacheDir, sat):
+    columns = ['acquisitionDate', 'acquisitionDate', 'upperLeftCornerLatitude', 'upperLeftCornerLongitude',
+               'lowerRightCornerLatitude', 'lowerRightCornerLongitude', 'cloudCover', 'sensor', 'LANDSAT_PRODUCT_ID']
     end = datetime.strptime(end_date, '%Y-%m-%d')
     # this is a landsat-util work around when it fails
     if sat == 7:
@@ -243,151 +241,49 @@ def search(lat, lon, start_date, end_date, cloud, available, cacheDir, sat):
     # looking to see if metadata CSV is available and if its up to the date needed
     if os.path.exists(fn):
         d = datetime.fromtimestamp(os.path.getmtime(fn))
-        db_name = os.path.join(cacheDir, fn.split(os.sep)[-1][:-4] + '.db')
-        if not os.path.exists(db_name):
-            orig_df = pd.read_csv(fn, usecols=columns)
-            orig_df['sr'] = pd.Series(np.tile('N', len(orig_df)))
-            orig_df['bt'] = pd.Series(np.tile('N', len(orig_df)))
-            orig_df['local_file_path'] = ''
-            conn = sqlite3.connect(db_name)
-            orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
-            conn.close()
-        #            orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
-
         if (end.year > d.year) and (end.month > d.month) and (end.day > d.day):
             wget.download(metadataUrl, out=fn)
-            metadata = pd.read_csv(fn, usecols=columns)
-            metadata['sr'] = pd.Series(np.tile('N', len(metadata)))
-            metadata['bt'] = pd.Series(np.tile('N', len(metadata)))
-            orig_df = pd.read_sql_query("SELECT * from raw_data", conn)
-            orig_df = orig_df.append(metadata, ignore_index=True)
-            orig_df = orig_df.drop_duplicates(subset='sceneID', keep='first')
-            orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
+        df = pd.read_csv(fn, usecols=columns)
+        index = ((df.acquisitionDate >= start_date) & (df.acquisitionDate < end_date) & (
+                df.upperLeftCornerLatitude > lat) & (df.upperLeftCornerLongitude < lon) & (
+                         df.lowerRightCornerLatitude < lat) & (df.lowerRightCornerLongitude > lon) & (
+                         df.cloudCover <= cloud) & (df.sensor == 'OLI_TIRS'))
+        df = df[index]
+
     else:
         wget.download(metadataUrl, out=fn)
-        db_name = os.path.join(cacheDir, fn.split(os.sep)[-1][:-4] + '.db')
-        conn = sqlite3.connect(db_name)
-        metadata = pd.read_csv(fn, usecols=columns)
-        metadata['sr'] = pd.Series(np.tile('N', len(metadata)))
-        metadata['bt'] = pd.Series(np.tile('N', len(metadata)))
-        metadata['local_file_path'] = ''
-        metadata.to_sql("raw_data", conn, if_exists="replace", index=False)
-        conn.close()
-    conn = sqlite3.connect(db_name)
-    if sat == 8:
-        output = pd.read_sql_query("SELECT * from raw_data WHERE (acquisitionDate >= '%s')"
-                                   "AND (acquisitionDate < '%s') AND (upperLeftCornerLatitude > %f )"
-                                   "AND (upperLeftCornerLongitude < %f ) AND "
-                                   "(lowerRightCornerLatitude < %f) AND "
-                                   "(lowerRightCornerLongitude > %f) AND "
-                                   "(cloudCover <= %d) AND (sr = '%s') AND "
-                                   "(sensor = 'OLI_TIRS')" %
-                                   (start_date, end_date, lat, lon, lat, lon, cloud, available), conn)
-    else:
-        output = pd.read_sql_query("SELECT * from raw_data WHERE (acquisitionDate >= '%s')"
-                                   "AND (acquisitionDate < '%s') AND (upperLeftCornerLatitude > %f )"
-                                   "AND (upperLeftCornerLongitude < %f ) AND "
-                                   "(lowerRightCornerLatitude < %f) AND "
-                                   "(lowerRightCornerLongitude > %f) AND "
-                                   "(cloudCover <= %d) AND (sr = '%s')" %
-                                   (start_date, end_date, lat, lon, lat, lon, cloud, available), conn)
-    conn.close()
-    return output
+        df = pd.read_csv(fn, usecols=columns)
+        index = ((df.acquisitionDate >= start_date) & (df.acquisitionDate < end_date) & (
+                df.upperLeftCornerLatitude > lat) & (df.upperLeftCornerLongitude < lon) & (
+                         df.lowerRightCornerLatitude < lat) & (df.lowerRightCornerLongitude > lon) & (
+                         df.cloudCover <= cloud) & (df.sensor == 'OLI_TIRS'))
+        df = df[index]
+
+    return df
 
 
-def searchProduct(productID, db_path, sat):
-    columns = ['acquisitionDate', 'acquisitionDate','upperLeftCornerLatitude', 'upperLeftCornerLongitude',
-               'lowerRightCornerLatitude' , 'lowerRightCornerLongitude', 'cloudCover']
-    if sat == 7:
-        metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_ETM_C1.csv'
-        db_name = os.path.join(db_path, 'LANDSAT_ETM_C1.db')
-    else:
-        metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8_C1.csv'
-        db_name = os.path.join(db_path, 'LANDSAT_8_C1.db')
-
-    fn = os.path.join(db_path, metadataUrl.split(os.sep)[-1])
-    if not os.path.exists(db_name):
-        if not os.path.exists(fn):
-            wget.download(metadataUrl, out=fn)
-        conn = sqlite3.connect(db_name)
-        orig_df = pd.read_csv(fn, usecols=columns)
-        orig_df['sr'] = pd.Series(np.tile('N', len(orig_df)))
-        orig_df['bt'] = pd.Series(np.tile('N', len(orig_df)))
-        orig_df['local_file_path'] = ''
-        orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
-        conn.close()
-
-    conn = sqlite3.connect(db_name)
-    output = pd.read_sql_query("SELECT * from raw_data WHERE (LANDSAT_PRODUCT_ID == '%s')" % productID, conn)
-    conn.close()
-    return output
+def intersection(lst1, lst2):
+    lst3 = [value for value in lst1 if value in lst2]
+    return lst3
 
 
-def updateDB(dbRows, paths, cacheDir, sat):
-    columns = ['acquisitionDate', 'acquisitionDate','upperLeftCornerLatitude', 'upperLeftCornerLongitude',
-               'lowerRightCornerLatitude' , 'lowerRightCornerLongitude', 'cloudCover']
-    end = datetime.strptime(str(dbRows.acquisitionDate.values[0]), '%Y-%m-%d')
-    # this is a landsat-util work around when it fails
-    if sat == 7:
-        metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_ETM_C1.csv'
-    else:
-        metadataUrl = 'https://landsat.usgs.gov/landsat/metadata_service/bulk_metadata_files/LANDSAT_8_C1.csv'
+def find_already_downloaded(df):
+    usgs_available = list(df.LANDSAT_PRODUCT_ID.values)
+    available = [os.path.basename(x) for x in
+                 glob.glob('/Users/mschull/umdGD/DISALEXI/SATELLITE_DATA/LANDSAT/L8/160043/RAW_DATA/*MTL*')]
+    available = [x[:-8] for x in available]
+    return intersection(usgs_available, available)
 
-    fn = os.path.join(cacheDir, metadataUrl.split(os.sep)[-1])
-    # looking to see if metadata CSV is available and if its up to the date needed
-    if os.path.exists(fn):
-        d = datetime.fromtimestamp(os.path.getmtime(fn))
-        db_name = os.path.join(cacheDir, fn.split(os.sep)[-1][:-4] + '.db')
-        if not os.path.exists(db_name):
-            orig_df = pd.read_csv(fn, usecols=columns)
-            orig_df['sr'] = pd.Series(np.tile('N', len(orig_df)))
-            orig_df['bt'] = pd.Series(np.tile('N', len(orig_df)))
-            orig_df['local_file_path'] = ''
-            conn = sqlite3.connect(db_name)
-            orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
-            conn.close()
-        else:
-            conn = sqlite3.connect(db_name)
-            orig_df = pd.read_sql_query("SELECT * from raw_data", conn)
-            conn.close()
 
-        if (end.year > d.year) and (end.month > d.month) and (end.day > d.day):
-            conn = sqlite3.connect(db_name)
-            os.remove(fn)
-            wget.download(metadataUrl, out=fn)
-            metadata = pd.read_csv(fn, usecols=columns)
-            metadata['sr'] = pd.Series(np.tile('N', len(metadata)))
-            metadata['bt'] = pd.Series(np.tile('N', len(metadata)))
-            orig_df = pd.read_sql_query("SELECT * from raw_data", conn)
-            orig_df = orig_df.append(metadata, ignore_index=True)
-            orig_df = orig_df.drop_duplicates(subset='sceneID', keep='first')
-            orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
-            conn.close()
-    else:
-        wget.download(metadataUrl, out=fn)
-        db_name = os.path.join(cacheDir, fn.split(os.sep)[-1][:-4] + '.db')
-        conn = sqlite3.connect(db_name)
-        orig_df = pd.read_csv(fn, usecols=columns)
-        orig_df['sr'] = pd.Series(np.tile('N', len(orig_df)))
-        orig_df['bt'] = pd.Series(np.tile('N', len(orig_df)))
-        orig_df['local_file_path'] = ''
-        orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
-        conn.close()
+def find_not_downloaded(df):
+    usgs_available = list(df.LANDSAT_PRODUCT_ID.values)
+    available = [os.path.basename(x) for x in
+                 glob.glob('/Users/mschull/umdGD/DISALEXI/SATELLITE_DATA/LANDSAT/L8/160043/RAW_DATA/*MTL*')]
+    available = [x[:-8] for x in available]
+    for x in available:
+        usgs_available.remove(x)
 
-    # ========updating database to reflect what is available on local system====
-    #    orig_df = pd.read_sql_query("SELECT * from raw_data",conn)
-    i = 0
-    for path in paths:
-        dbRows.loc[i, 'local_file_path'] = path
-        dbRows.loc[i, 'sr'] = 'Y'
-        dbRows.loc[i, 'bt'] = 'Y'
-        i += 1
-
-    conn = sqlite3.connect(db_name)
-    orig_df = orig_df.append(dbRows, ignore_index=True)
-    orig_df = orig_df.drop_duplicates(subset='sceneID', keep='last')
-    orig_df.to_sql("raw_data", conn, if_exists="replace", index=False)
-    conn.close()
+    return usgs_available
 
 
 def download_order_gen(order_id, auth, downloader=None, sleep_time=300, timeout=86400, **dlkwargs):
@@ -596,15 +492,11 @@ def main():
 
         # ======search for landsat data not on system===============================
     if orderOrsearch == 'search':
-        available = 'N'
-        notDownloaded_df = search(loc[0], loc[1], start_date, end_date, cloud, available, cacheDir, sat)
-        available = 'Y'
-        Downloaded_df = search(loc[0], loc[1], start_date, end_date, cloud, available, cacheDir, sat)
+        output_df = search(loc[0], loc[1], start_date, end_date, cloud, cacheDir, sat)
         print("====data needed to be downloaded==============================")
-        print(notDownloaded_df.LANDSAT_PRODUCT_ID.values)
+        print(find_not_downloaded(output_df))
         print("====data available on system==================================")
-        print(Downloaded_df.LANDSAT_PRODUCT_ID.values)
-        print(Downloaded_df.local_file_path)
+        print(find_already_downloaded(output_df))
 
     elif orderOrsearch == 'update':
         findDir = args.find
@@ -626,20 +518,7 @@ def main():
             print(path)
             i += 1
             productIDs.append('_'.join(fn.split(os.sep)[-1].split('_')[:7]))
-        #        productIDs = np.unique(productIDs)
-        #        paths = np.unique(paths)
         # =========copy all landsat files to the cache and put cache location in the database
-        orig_df = pd.DataFrame()
-        folders = []
-        for productID in productIDs:
-            print(productID)
-            scene = productID.split(os.sep)[-1].split('_')[2]
-            folder = os.path.join(cacheDir, "L%d" % sat, scene, "RAW_DATA")
-            if not os.path.exists(folder):
-                os.makedirs(folder)
-            folders.append(folder)
-            orig_df = orig_df.append(searchProduct(productID, cacheDir, sat), ignore_index=True)
-        updateDB(orig_df, folders, cacheDir, sat)
         for productID in productIDs:
             for path in paths:
                 fns = glob.glob(os.path.join(path, "*%s*" % productID))
@@ -655,24 +534,21 @@ def main():
                     continue
 
     else:
-        available = 'N'
-        output_df = search(loc[0], loc[1], start_date, end_date, cloud, available, cacheDir, sat)
+        output_df = search(loc[0], loc[1], start_date, end_date, cloud, cacheDir, sat)
 
-        sceneIDs = output_df.sceneID
-        productIDs = output_df.LANDSAT_PRODUCT_ID
+        productIDs = find_not_downloaded(output_df)
 
         # start Landsat order process
         get_landsat_data(productIDs, ("%s" % usgs_user, "%s" % usgs_pass))
-
         # ========move surface relectance files=====================================
         download_folder = os.path.join(os.getcwd(), 'espa_downloads')
         folders_2move = glob.glob(os.path.join(download_folder, '*'))
         i = 0
         paths = []
-        for sceneID in sceneIDs:
+        for productID in productIDs:
             inputFolder = folders_2move[i]
             i += 1
-            scene = sceneID[3:9]
+            scene = productID.split('_')[2]
             folder = os.path.join(cacheDir, "L%d" % sat, scene, "RAW_DATA")
             if not os.path.exists(folder):
                 os.makedirs(folder)
@@ -680,8 +556,6 @@ def main():
             for filename in glob.glob(os.path.join(inputFolder, '*.*')):
                 shutil.copy(filename, folder)
             paths.append(folder)
-
-        updateDB(output_df, paths, cacheDir, sat)
 
         if len(folders_2move) > 0:
             # ======Clean up folder===============================

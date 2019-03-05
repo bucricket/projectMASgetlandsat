@@ -563,9 +563,6 @@ def main():
     parser.add_argument("cloud", type=int, help="cloud coverage")
     parser.add_argument("orderOrsearch", type=str, help="type 'order' for order and 'search'"
                                                         "for print search results or 'update' to update the database with existing data")
-    cacheDir = os.path.abspath(os.path.join(os.getcwd(), os.pardir, "SATELLITE_DATA", "LANDSAT"))
-    parser.add_argument('-c', "--cache", nargs='?', type=str, default=cacheDir,
-                        help='top directory for the landsat cache')
     parser.add_argument('-s', '--sat', nargs='?', type=int, default=8,
                         help='which landsat to search or download, i.e. Landsat 8 = 8')
     parser.add_argument('-f', '--find', nargs='*', type=str, default=None,
@@ -577,12 +574,10 @@ def main():
     end_date = args.end_date
     cloud = args.cloud
     orderOrsearch = args.orderOrsearch
-    cacheDir = args.cache
     sat = args.sat
-    print(cacheDir)
+    cacheDir = os.path.abspath(os.path.join(os.getcwd(), "SATELLITE_DATA", "LANDSAT"))
     if not os.path.exists(cacheDir):
         os.makedirs(cacheDir)
-        print(cacheDir)
 
     # =====USGS credentials===============
     # need to get this from pop up

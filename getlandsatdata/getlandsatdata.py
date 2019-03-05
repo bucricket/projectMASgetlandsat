@@ -561,15 +561,13 @@ def main():
         folders_2move = glob.glob(os.path.join(download_folder, '*'))
         i = 0
         paths = []
-        for productID in productIDs:
-            inputFolder = folders_2move[i]
-            i += 1
-            scene = productID.split('_')[2]
+        for folder_2move in folders_2move:
+            scene = folder_2move.split(os.sep)[-1].split('-')[0][4:10]
             folder = os.path.join(cacheDir, "L%d" % sat, scene, "RAW_DATA")
             if not os.path.exists(folder):
                 os.makedirs(folder)
 
-            for filename in glob.glob(os.path.join(inputFolder, '*.*')):
+            for filename in glob.glob(os.path.join(folder_2move, '*.*')):
                 shutil.copy(filename, folder)
             paths.append(folder)
 

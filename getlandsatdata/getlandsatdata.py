@@ -276,8 +276,10 @@ def find_already_downloaded(df, cache_dir):
     scenes = list(set(scenes))
     available_list = []
     for scene in scenes:
+        path_to_search = os.path.join(cache_dir,'L%s/%s/RAW_DATA/*MTL*' % (sat, scene))
+        print(path_to_search)
         available = [os.path.basename(x) for x in
-                     glob.glob(os.path.join(cache_dir,'L%s/%s/RAW_DATA/*MTL*' % (sat, scene )))]
+                     glob.glob(path_to_search)]
         available = [x[:-8] for x in available]
         available_list = available_list + available
     return intersection(usgs_available, available_list)
@@ -292,8 +294,10 @@ def find_not_downloaded(df, cache_dir):
     scenes = list(set(scenes))
     available_list = []
     for scene in scenes:
+        path_to_search = os.path.join(cache_dir,'L%s/%s/RAW_DATA/*MTL*' % (sat, scene))
+        print(path_to_search)
         available = [os.path.basename(x) for x in
-                     glob.glob(os.path.join(cache_dir,'L%s/%s/RAW_DATA/*MTL*' % (sat, scene )))]
+                     glob.glob(path_to_search)]
         available = [x[:-8] for x in available]
         available_list = available_list + available
     for x in available_list:

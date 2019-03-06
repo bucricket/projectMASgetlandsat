@@ -559,7 +559,6 @@ def main():
         # ========move surface relectance files=====================================
         download_folder = os.path.join(os.getcwd(), 'espa_downloads')
         folders_2move = glob.glob(os.path.join(download_folder, '*'))
-        i = 0
         paths = []
         for folder_2move in folders_2move:
             scene = folder_2move.split(os.sep)[-1].split('-')[0][4:10]

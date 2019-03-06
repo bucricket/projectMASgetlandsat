@@ -243,7 +243,9 @@ def search(lat, lon, start_date, end_date, cloud, cacheDir, sat):
         d = datetime.fromtimestamp(os.path.getmtime(fn))
         if (end.year > d.year) and (end.month > d.month) and (end.day > d.day):
             wget.download(metadataUrl, out=fn)
-        df = pd.read_csv(fn, usecols=columns)
+            df = pd.read_csv(fn, usecols=columns)
+            df.to_csv(fn)
+        df = pd.read_csv(fn)
         index = ((df.acquisitionDate >= start_date) & (df.acquisitionDate < end_date) & (
                 df.upperLeftCornerLatitude > lat) & (df.upperLeftCornerLongitude < lon) & (
                          df.lowerRightCornerLatitude < lat) & (df.lowerRightCornerLongitude > lon) & (
@@ -253,6 +255,7 @@ def search(lat, lon, start_date, end_date, cloud, cacheDir, sat):
     else:
         wget.download(metadataUrl, out=fn)
         df = pd.read_csv(fn, usecols=columns)
+        df.to_csv(fn)
         index = ((df.acquisitionDate >= start_date) & (df.acquisitionDate < end_date) & (
                 df.upperLeftCornerLatitude > lat) & (df.upperLeftCornerLongitude < lon) & (
                          df.lowerRightCornerLatitude < lat) & (df.lowerRightCornerLongitude > lon) & (
@@ -277,7 +280,6 @@ def find_already_downloaded(df, cache_dir):
     available_list = []
     for scene in scenes:
         path_to_search = os.path.join(cache_dir,'L%s/%s/RAW_DATA/*MTL*' % (sat, scene))
-        print(path_to_search)
         available = [os.path.basename(x) for x in
                      glob.glob(path_to_search)]
         available = [x[:-8] for x in available]
@@ -295,7 +297,6 @@ def find_not_downloaded(df, cache_dir):
     available_list = []
     for scene in scenes:
         path_to_search = os.path.join(cache_dir,'L%s/%s/RAW_DATA/*MTL*' % (sat, scene))
-        print(path_to_search)
         available = [os.path.basename(x) for x in
                      glob.glob(path_to_search)]
         available = [x[:-8] for x in available]

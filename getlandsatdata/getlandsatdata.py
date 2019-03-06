@@ -297,8 +297,8 @@ def find_not_downloaded(df, cache_dir):
         available = [x[:-8] for x in available]
         available_list = available_list + available
     for x in available_list:
-        usgs_available.remove(x)
-
+        if x in usgs_available:
+            usgs_available.remove(x)
     return usgs_available
 
 

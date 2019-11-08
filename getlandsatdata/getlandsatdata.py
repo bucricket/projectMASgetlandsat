@@ -408,7 +408,7 @@ def get_landsat_data(sceneIDs, auth):
         for sensor in order.keys():
             if isinstance(order[sensor], dict) and order[sensor].get('inputs'):
                 order[sensor]['products'] = l8_prods
-
+        order = dict((k, order[k]) for k in ["olitirs8_collection"] if k in order) # keep only the collection
         order['format'] = 'gtiff'
         # =======order the data============
         resp = espa_api('order', verb='post', uauth=auth, body=order)
